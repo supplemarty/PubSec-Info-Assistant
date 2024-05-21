@@ -129,7 +129,7 @@ const FilePicker = ({folderPath, tags}: Props) => {
       ) : null}
 
       {/* upload button */}
-      {files.length ? (
+      {(files.length && (folderPath > "")) ? (
         <button
           onClick={handleUpload}
           className={classNames(

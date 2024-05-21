@@ -49,6 +49,7 @@ from approaches.tabulardataassistant import (
 from shared_code.status_log import State, StatusClassification, StatusLog, StatusQueryLevel
 from azure.cosmos import CosmosClient
 
+from fastapi_microsoft_identity import ( initialize, requires_auth, validate_scope, get_token_claims )
 
 # === ENV Setup ===
 
@@ -78,7 +79,7 @@ ENV = {
     "AZURE_SUBSCRIPTION_ID": None,
     "AZURE_ARM_MANAGEMENT_API": "https://management.azure.com",
     "CHAT_WARNING_BANNER_TEXT": "",
-    "APPLICATION_TITLE": "Information Assistant, built with Azure OpenAI",
+    # "APPLICATION_TITLE": "Azure AI",
     "KB_FIELDS_CONTENT": "content",
     "KB_FIELDS_PAGENUMBER": "pages",
     "KB_FIELDS_SOURCEFILE": "file_uri",
@@ -102,7 +103,9 @@ ENV = {
     "ENABLE_MATH_ASSISTANT": "false",
     "ENABLE_TABULAR_DATA_ASSISTANT": "false",
     "ENABLE_MULTIMEDIA": "false",
-    "MAX_CSV_FILE_SIZE": "7"
+    "MAX_CSV_FILE_SIZE": "7",
+    "AZURE_TENANT_ID": "",
+    "AZURE_WEBAPP_CLIENT_ID": ""
     }
 
 for key, value in ENV.items():
@@ -260,6 +263,9 @@ chat_approaches = {
     )
 }
 
+# Setup API Authorization
+initialize(ENV["AZURE_TENANT_ID"], "infoasst-korzd")
+
 # Create API
 app = FastAPI(
     title="IA Web API",
@@ -268,6 +274,11 @@ app = FastAPI(
     docs_url="/docs",
 )
 
+def getuserid(request: Request):
+    tc = get_token_claims(request)
+    uid = tc["upn"]
+    return uid
+
 @app.get("/", include_in_schema=False, response_class=RedirectResponse)
 async def root():
     """Redirect to the index.html page"""
@@ -275,6 +286,7 @@ async def root():
 
 
 @app.post("/chat")
+@requires_auth
 async def chat(request: Request):
     """Chat with the bot using a given approach
 
@@ -289,15 +301,17 @@ async def chat(request: Request):
     """
     json_body = await request.json()
     approach = json_body.get("approach")
+    overrides = json_body.get("overrides", {})
+    overrides["selected_folders"] = getuserid(request)
     try:
         impl = chat_approaches.get(Approaches(int(approach)))
         if not impl:
             return {"error": "unknown approach"}, 400
         
         if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
-            r = await impl.run(json_body.get("history", []), json_body.get("overrides", {}), json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
+            r = await impl.run(json_body.get("history", []), overrides, json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
         else:
-            r = await impl.run(json_body.get("history", []), json_body.get("overrides", {}), {}, json_body.get("thought_chain", {}))
+            r = await impl.run(json_body.get("history", []), overrides, {}, json_body.get("thought_chain", {}))
        
         response = {
                 "data_points": r["data_points"],
@@ -346,6 +360,7 @@ async def get_blob_client_url():
     return {"url": f"{blob_client.url}?{sas_token}"}
 
 @app.post("/getalluploadstatus")
+@requires_auth
 async def get_all_upload_status(request: Request):
     """
     Get the status and tags of all file uploads in the last N hours.
@@ -359,7 +374,7 @@ async def get_all_upload_status(request: Request):
     json_body = await request.json()
     timeframe = json_body.get("timeframe")
     state = json_body.get("state")
-    folder = json_body.get("folder")
+    folder = getuserid(request) #son_body.get("folder")
     tag = json_body.get("tag")   
     try:
         results = statusLog.read_files_status_by_timeframe(timeframe, 
@@ -368,23 +383,23 @@ async def get_all_upload_status(request: Request):
             tag,
             os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
 
-        # retrieve tags for each file
-         # Initialize an empty list to hold the tags
-        items = []              
-        cosmos_client = CosmosClient(url=statusLog._url, credential=statusLog._key)
-        database = cosmos_client.get_database_client(statusLog._database_name)
-        container = database.get_container_client(statusLog._container_name)
-        query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags"
-        items = list(container.query_items(
-            query=query_string,
-            enable_cross_partition_query=True
-        ))           
+        # # retrieve tags for each file
+        #  # Initialize an empty list to hold the tags
+        # items = []              
+        # cosmos_client = CosmosClient(url=statusLog._url, credential=statusLog._key)
+        # database = cosmos_client.get_database_client(statusLog._database_name)
+        # container = database.get_container_client(statusLog._container_name)
+        # query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags"
+        # items = list(container.query_items(
+        #     query=query_string,
+        #     enable_cross_partition_query=True
+        # ))           
 
-        # Extract and split tags
-        unique_tags = set()
-        for item in items:
-            tags = item.split(',')
-            unique_tags.update(tags)        
+        # # Extract and split tags
+        # unique_tags = set()
+        # for item in items:
+        #     tags = item.split(',')
+        #     unique_tags.update(tags)        
 
         
     except Exception as ex:
@@ -392,33 +407,33 @@ async def get_all_upload_status(request: Request):
         raise HTTPException(status_code=500, detail=str(ex)) from ex
     return results
 
-@app.post("/getfolders")
-async def get_folders(request: Request):
-    """
-    Get all folders.
+# @app.post("/getfolders")
+# async def get_folders(request: Request):
+#     """
+#     Get all folders.
 
-    Parameters:
-    - request: The HTTP request object.
+#     Parameters:
+#     - request: The HTTP request object.
 
-    Returns:
-    - results: list of unique folders.
-    """
-    try:
-        blob_container = blob_client.get_container_client(os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
-        # Initialize an empty list to hold the folder paths
-        folders = []
-        # List all blobs in the container
-        blob_list = blob_container.list_blobs()
-        # Iterate through the blobs and extract folder names and add unique values to the list
-        for blob in blob_list:
-            # Extract the folder path if exists
-            folder_path = os.path.dirname(blob.name)
-            if folder_path and folder_path not in folders:
-                folders.append(folder_path)
-    except Exception as ex:
-        log.exception("Exception in /getfolders")
-        raise HTTPException(status_code=500, detail=str(ex)) from ex
-    return folders
+#     Returns:
+#     - results: list of unique folders.
+#     """
+#     try:
+#         blob_container = blob_client.get_container_client(os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
+#         # Initialize an empty list to hold the folder paths
+#         folders = []
+#         # List all blobs in the container
+#         blob_list = blob_container.list_blobs()
+#         # Iterate through the blobs and extract folder names and add unique values to the list
+#         for blob in blob_list:
+#             # Extract the folder path if exists
+#             folder_path = os.path.dirname(blob.name)
+#             if folder_path and folder_path not in folders:
+#                 folders.append(folder_path)
+#     except Exception as ex:
+#         log.exception("Exception in /getfolders")
+#         raise HTTPException(status_code=500, detail=str(ex)) from ex
+#     return folders
 
 
 @app.post("/deleteItems")
@@ -489,6 +504,7 @@ async def resubmit_Items(request: Request):
 
 
 @app.post("/gettags")
+@requires_auth
 async def get_tags(request: Request):
     """
     Get all tags.
@@ -505,7 +521,9 @@ async def get_tags(request: Request):
         cosmos_client = CosmosClient(url=statusLog._url, credential=statusLog._key)     
         database = cosmos_client.get_database_client(statusLog._database_name)               
         container = database.get_container_client(statusLog._container_name) 
-        query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags"  
+        userId = getuserid(request)
+        query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags Where c.file_path LIKE 'upload/" + userId + "/%'"  
+        #query_string = "SELECT c.file_path FROM c Where c.file_path LIKE 'upload/Marty/%'"  
         items = list(container.query_items(
             query=query_string,
             enable_cross_partition_query=True
@@ -626,18 +644,18 @@ async def get_citation(request: Request):
         raise HTTPException(status_code=500, detail=str(ex)) from ex
     return results
 
-# Return APPLICATION_TITLE
-@app.get("/getApplicationTitle")
-async def get_application_title():
-    """Get the application title text
+# # Return APPLICATION_TITLE
+# @app.get("/getApplicationTitle")
+# async def get_application_title():
+#     """Get the application title text
     
-    Returns:
-        dict: A dictionary containing the application title.
-    """
-    response = {
-            "APPLICATION_TITLE": ENV["APPLICATION_TITLE"]
-        }
-    return response
+#     Returns:
+#         dict: A dictionary containing the application title.
+#     """
+#     response = {
+#             "APPLICATION_TITLE": ENV["APPLICATION_TITLE"]
+#         }
+#     return response
 
 @app.get("/getalltags")
 async def get_all_tags():
@@ -867,6 +885,15 @@ async def get_feature_flags():
         "ENABLE_MULTIMEDIA": str_to_bool.get(ENV["ENABLE_MULTIMEDIA"]),
     }
     return response
+
+@app.get("/getAppIdentity")
+async def get_app_identity():
+    response = {
+        "AZURE_TENANT_ID": ENV["AZURE_TENANT_ID"],
+        "AZURE_WEBAPP_CLIENT_ID": ENV["AZURE_WEBAPP_CLIENT_ID"]
+    }
+    return response
+
 
 app.mount("/", StaticFiles(directory="static"), name="static")
 

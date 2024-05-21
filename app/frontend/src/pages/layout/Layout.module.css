@@ -20,21 +20,23 @@
 }
 
 .header {
-    background-color: #222222;
+    background-color: rgb(168, 166, 161);
     color: #f2f2f2;
 }
 
 .headerContainer {
     display: flex;
-    align-items: center;
-    justify-content: space-around;
+    /* align-items: center;
+    justify-content: space-around; */
     margin-right: 12px;
     margin-left: 12px;
+    height: 55px;
+    padding-top: 7px;
 }
 
 .headerTitleContainer {
     display: flex;
-    align-items: center;
+    /* align-items: center; */
     margin-right: 40px;
     color: #f2f2f2;
     text-decoration: none;
@@ -42,6 +44,7 @@
 
 .headerLogo {
     height: 40px;
+    margin-left: 25px;
 }
 
 .headerTitle {
@@ -53,6 +56,12 @@
     display: flex;
     list-style: none;
     padding-left: 0;
+}
+
+.headerNav {
+    display: flex;
+    margin-left: auto;
+    justify-content: flex-end;
 }
 
 .headerNavPageLink {

@@ -59,6 +59,10 @@
     margin-bottom: 10px;
 }
 
+.chatEmptyStateLogo {
+    height: 70px;
+}
+
 .chatEmptyObjectives {
     padding-left: 160px;
     padding-right: 160px;

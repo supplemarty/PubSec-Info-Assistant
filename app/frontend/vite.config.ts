@@ -8,7 +8,13 @@ export default defineConfig({
     build: {
         outDir: "../backend/static",
         emptyOutDir: true,
-        sourcemap: true
+        sourcemap: true,
+        rollupOptions: {
+            input: {
+                input: 'index.html',
+                authreturn: 'authreturn.html'
+            }
+        }
     },
     server: {
         proxy: {

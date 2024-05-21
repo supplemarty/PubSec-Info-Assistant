@@ -1,17 +1,17 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Pivot,
     PivotItem } from "@fluentui/react";
 import { ITag } from '@fluentui/react/lib/Pickers';
 import { FilePicker } from "../../components/filepicker/file-picker";
 import { FileStatus } from "../../components/FileStatus/FileStatus";
 import { TagPickerInline } from "../../components/TagPicker/TagPicker"
-import { FolderPicker } from '../../components/FolderPicker/FolderPicker';
+// import { FolderPicker } from '../../components/FolderPicker/FolderPicker';
 import { SparkleFilled, DocumentPdfFilled, DocumentDataFilled, GlobePersonFilled, MailFilled, StoreMicrosoftFilled } from "@fluentui/react-icons";
 import styles from "./Content.module.css";
-
+import { IdentityManager } from "../../identity";
 export interface IButtonExampleProps {
     disabled?: boolean;
     checked?: boolean;
@@ -20,28 +20,35 @@ export interface IButtonExampleProps {
 const Content = () => {
     const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined);
     const [selectedTags, setSelectedTags] = useState<string[] | undefined>(undefined);
-    const [selectedApproach, setSelectedApproach] = useState<number | undefined>(undefined);
+    // const [selectedApproach, setSelectedApproach] = useState<number | undefined>(undefined);
 
-    const onSelectedKeyChanged = (selectedFolder: string[]) => {
-        setSelectedKey(selectedFolder[0]);
-    };
+    // const onSelectedKeyChanged = (selectedFolder: string[]) => {
+    //     setSelectedKey(selectedFolder[0]);
+    // };
 
     const onSelectedTagsChanged = (selectedTags: ITag[]) => {
         setSelectedTags(selectedTags.map((tag) => tag.name));
     }
 
-    const onSelectedApproach = (approach: number) => {
-        setSelectedApproach(approach);
-        alert(approach)
-    }
+    // const onSelectedApproach = (approach: number) => {
+    //     setSelectedApproach(approach);
+    //     alert(approach)
+    // }
 
-    const handleLinkClick = (item?: PivotItem) => {
-        setSelectedKey(undefined);
-    };    
+    // const handleLinkClick = (item?: PivotItem) => {
+    //     setSelectedKey(undefined);
+    // };   
+    
+    
+    useEffect(() => {
+        IdentityManager.GetCurrentUser(true).then((u) => {
+            setSelectedKey(u.UserId);
+        });
+    },[]);
 
     return (
         <div className={styles.contentArea} >
-            <Pivot aria-label="Upload Files Section" className={styles.topPivot} onLinkClick={handleLinkClick}>
+            <Pivot aria-label="Upload Files Section" className={styles.topPivot}>
                 <PivotItem headerText="Upload Files" aria-label="Upload Files Tab">
                     <div className={styles.App} >
                         <div style={{ marginBottom: '20px', marginTop: '20px' }}>
@@ -85,7 +92,7 @@ const Content = () => {
                             </span>
                         </div>
                         <div className={styles.EmptyObjectivesListItem}>
-                            <FolderPicker allowFolderCreation={true} onSelectedKeyChange={onSelectedKeyChanged}/>
+                            {/* <FolderPicker allowFolderCreation={true} onSelectedKeyChange={onSelectedKeyChanged}/> */}
                             <TagPickerInline allowNewTags={true} onSelectedTagsChange={onSelectedTagsChanged}/>
                             <FilePicker folderPath={selectedKey || ""} tags={selectedTags || []}/>
                         </div>

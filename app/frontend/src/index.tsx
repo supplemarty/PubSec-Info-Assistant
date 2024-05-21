@@ -15,20 +15,24 @@ import Content from "./pages/content/Content";
 import Tutor from "./pages/tutor/Tutor";
 import { Tda } from "./pages/tda/Tda";
 
+ import { SecureLanding } from "./identity";
+
 initializeIcons();
 
+const land = <SecureLanding><Layout/></SecureLanding>;
+
 export default function App() {
-    const [toggle, setToggle] = React.useState('Work');
+    // const [toggle, setToggle] = React.useState('Work');
     return (
         <HashRouter>
             <Routes>
-                <Route path="/" element={<Layout />}>
-                    <Route index element={<Chat />} />
-                    <Route path="content" element={<Content />} />
+                    <Route path="/" element={land}>
+                        <Route index element={<Chat />} />
+                        <Route path="content" element={<Content />} />
+                        <Route path="tutor" element={<Tutor />} />
+                        <Route path="tda" element={<Tda folderPath={""} tags={[]} />} />
+                    </Route>
                     <Route path="*" element={<NoPage />} />
-                    <Route path="tutor" element={<Tutor />} />
-                    <Route path="tda" element={<Tda folderPath={""} tags={[]} />} />
-            </Route>
             </Routes>
         </HashRouter>    
     );
@@ -39,3 +43,4 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <App />
     </React.StrictMode>
 );
+

@@ -13,11 +13,13 @@
                 "app:app",
                 "--reload",
                 "--port",
-                "5000"
+                "5000",
+                "--host",
+                "localhost"
             ],
             "cwd": "${workspaceFolder}/app/backend",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "envFile": "${workspaceFolder}/scripts/environments/infrastructure.debug.env",
             "preLaunchTask": "pip_install"
         },

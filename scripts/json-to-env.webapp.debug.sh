@@ -156,6 +156,14 @@ jq -r  '
         {
             "path": "MAX_CSV_FILE_SIZE",
             "env_var": "MAX_CSV_FILE_SIZE"
+        },
+        {
+            "path": "AZURE_TENANT_ID",
+            "env_var": "AZURE_TENANT_ID"
+        },
+        {
+            "path": "AZURE_WEBAPP_CLIENT_ID",
+            "env_var": "AZURE_WEBAPP_CLIENT_ID"
         }
     ]
         as $env_vars_to_extract

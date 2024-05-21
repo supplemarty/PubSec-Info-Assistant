@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import { useRef, useState, useEffect } from "react";
-import { Checkbox, Panel, DefaultButton, TextField, SpinButton, Separator, Toggle, Label } from "@fluentui/react";
+import { Panel, DefaultButton, Separator, Label } from "@fluentui/react";
 import Switch from 'react-switch';
 import { GlobeFilled, BuildingMultipleFilled, AddFilled, ChatSparkleFilled } from "@fluentui/react-icons";
 import { ITag } from '@fluentui/react/lib/Pickers';
@@ -14,27 +14,48 @@ import rtbgstyles from "../../components/ResponseTempButtonGroup/ResponseTempBut
 import { chatApi, Approaches, ChatResponse, ChatRequest, ChatTurn, ChatMode, getFeatureFlags, GetFeatureFlagsResponse } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
-import { ExampleList } from "../../components/Example";
+// import { ExampleList } from "../../components/Example";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
 import { SettingsButton } from "../../components/SettingsButton";
-import { InfoButton } from "../../components/InfoButton";
+// import { InfoButton } from "../../components/InfoButton";
 import { ClearChatButton } from "../../components/ClearChatButton";
 import { ResponseLengthButtonGroup } from "../../components/ResponseLengthButtonGroup";
 import { ResponseTempButtonGroup } from "../../components/ResponseTempButtonGroup";
 import { ChatModeButtonGroup } from "../../components/ChatModeButtonGroup";
-import { InfoContent } from "../../components/InfoContent/InfoContent";
-import { FolderPicker } from "../../components/FolderPicker";
+// import { InfoContent } from "../../components/InfoContent/InfoContent";
+// import { FolderPicker } from "../../components/FolderPicker";
 import { TagPickerInline } from "../../components/TagPicker";
-import React from "react";
+// import React from "react";
+import DivCore_DkGray from "../../assets/DivCore_DkGray.png";
 
 const Chat = () => {
+
+
+    const defaultChatMode : ChatMode = ChatMode.WorkOnly;
+    interface IResponseTempByChatMode {
+        [ChatMode.WorkOnly]: number,
+        [ChatMode.Ungrounded]: number,
+        [ChatMode.WorkPlusWeb]: number
+    }
+    const defaultResponseTempByChatMode: IResponseTempByChatMode = {
+        [ChatMode.WorkOnly]: 0,
+        [ChatMode.Ungrounded]: 0.6,
+        [ChatMode.WorkPlusWeb]: 0
+    };
+    let currentResponseTempByChatMode : IResponseTempByChatMode = {
+        [ChatMode.WorkOnly]: defaultResponseTempByChatMode[ChatMode.WorkOnly],
+        [ChatMode.Ungrounded]: defaultResponseTempByChatMode[ChatMode.Ungrounded],
+        [ChatMode.WorkPlusWeb]: defaultResponseTempByChatMode[ChatMode.WorkPlusWeb]
+    }
+
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
-    const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
-    const [retrieveCount, setRetrieveCount] = useState<number>(5);
-    const [useSuggestFollowupQuestions, setUseSuggestFollowupQuestions] = useState<boolean>(false);
-    const [userPersona, setUserPersona] = useState<string>("analyst");
-    const [systemPersona, setSystemPersona] = useState<string>("an Assistant");
+    // const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
+    const [retrieveCount] = useState<number>(5);
+    const [useSuggestFollowupQuestions] = useState<boolean>(false);
+    const [userPersona] = useState<string>("analyst");
+    const [systemPersona] = useState<string>("an Assistant");
+
     // Setting responseLength to 2048 by default, this will effect the default display of the ResponseLengthButtonGroup below.
     // It must match a valid value of one of the buttons in the ResponseLengthButtonGroup.tsx file. 
     // If you update the default value here, you must also update the default value in the onResponseLengthChange method.
@@ -43,9 +64,9 @@ const Chat = () => {
     // Setting responseTemp to 0.6 by default, this will effect the default display of the ResponseTempButtonGroup below.
     // It must match a valid value of one of the buttons in the ResponseTempButtonGroup.tsx file.
     // If you update the default value here, you must also update the default value in the onResponseTempChange method.
-    const [responseTemp, setResponseTemp] = useState<number>(0.6);
+    const [responseTempByChatMode, setResponseTempByChatMode] = useState<IResponseTempByChatMode>(currentResponseTempByChatMode);
 
-    const [activeChatMode, setChatMode] = useState<ChatMode>(ChatMode.WorkOnly);
+    const [activeChatMode, setChatMode] = useState<ChatMode>(defaultChatMode);
     const [defaultApproach, setDefaultApproach] = useState<number>(Approaches.ReadRetrieveRead);
     const [activeApproach, setActiveApproach] = useState<number>(Approaches.ReadRetrieveRead);
     const [featureFlags, setFeatureFlags] = useState<GetFeatureFlagsResponse | undefined>(undefined);
@@ -63,7 +84,7 @@ const Chat = () => {
     const [activeCitationSourceFile, setActiveCitationSourceFile] = useState<string>();
     const [activeCitationSourceFilePageNumber, setActiveCitationSourceFilePageNumber] = useState<string>();
     const [activeAnalysisPanelTab, setActiveAnalysisPanelTab] = useState<AnalysisPanelTabs | undefined>(undefined);
-    const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
+    // const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
     const [selectedTags, setSelectedTags] = useState<ITag[]>([]);
 
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
@@ -110,8 +131,8 @@ const Chat = () => {
                     systemPersona: systemPersona,
                     aiPersona: "",
                     responseLength: responseLength,
-                    responseTemp: responseTemp,
-                    selectedFolders: selectedFolders.includes("selectAll") ? "All" : selectedFolders.length == 0 ? "All" : selectedFolders.join(","),
+                    responseTemp: responseTempByChatMode[activeChatMode],
+                    // selectedFolders: selectedFolders.includes("selectAll") ? "All" : selectedFolders.length == 0 ? "All" : selectedFolders.join(","),
                     selectedTags: selectedTags.map(tag => tag.name).join(",")
                 },
                 citation_lookup: approach == Approaches.CompareWebWithWork ? web_citation_lookup : approach == Approaches.CompareWorkWithWeb ? work_citation_lookup : {},
@@ -181,7 +202,7 @@ const Chat = () => {
         for (let node of _ev.target.parentNode.childNodes) {
             if (node.value == _ev.target.value) {
                 switch (node.value) {
-                    case "1.0":
+                    case "1":
                         node.className = `${rtbgstyles.buttonleftactive}`;
                         break;
                     case "0.6":
@@ -197,7 +218,7 @@ const Chat = () => {
             }
             else {
                 switch (node.value) {
-                    case "1.0":
+                    case "1":
                         node.className = `${rtbgstyles.buttonleft}`;
                         break;
                     case "0.6":
@@ -213,7 +234,8 @@ const Chat = () => {
             }
         }
         // the or value here needs to match the default value assigned to responseLength above.
-        setResponseTemp(_ev.target.value as number || 0.6)
+        currentResponseTempByChatMode[activeChatMode] = _ev.target.value as number || 0.6;
+        setResponseTempByChatMode(currentResponseTempByChatMode);
     };
 
     const onChatModeChange = (_ev: any) => {
@@ -239,25 +261,25 @@ const Chat = () => {
     useEffect(() => {fetchFeatureFlags()}, []);
     useEffect(() => chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" }), [isLoading]);
 
-    const onRetrieveCountChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
-        setRetrieveCount(parseInt(newValue || "5"));
-    };
+    // const onRetrieveCountChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
+    //     setRetrieveCount(parseInt(newValue || "5"));
+    // };
 
-    const onUserPersonaChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setUserPersona(newValue || "");
-    }
+    // const onUserPersonaChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+    //     setUserPersona(newValue || "");
+    // }
 
-    const onSystemPersonaChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-        setSystemPersona(newValue || "");
-    }
+    // const onSystemPersonaChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+    //     setSystemPersona(newValue || "");
+    // }
 
-    const onUseSuggestFollowupQuestionsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
-        setUseSuggestFollowupQuestions(!!checked);
-    };
+    // const onUseSuggestFollowupQuestionsChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
+    //     setUseSuggestFollowupQuestions(!!checked);
+    // };
 
-    const onExampleClicked = (example: string) => {
-        makeApiRequest(example, defaultApproach, {}, {}, {});
-    };
+    // const onExampleClicked = (example: string) => {
+    //     makeApiRequest(example, defaultApproach, {}, {}, {});
+    // };
 
     const onShowCitation = (citation: string, citationSourceFile: string, citationSourceFilePageNumber: string, index: number) => {
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
@@ -282,9 +304,9 @@ const Chat = () => {
         setSelectedAnswer(index);
     };
 
-    const onSelectedKeyChanged = (selectedFolders: string[]) => {
-        setSelectedFolders(selectedFolders)
-    };
+    // const onSelectedKeyChanged = (selectedFolders: string[]) => {
+    //     setSelectedFolders(selectedFolders)
+    // };
 
     const onSelectedTagsChange = (selectedTags: ITag[]) => {
         setSelectedTags(selectedTags)
@@ -306,7 +328,7 @@ const Chat = () => {
                 <div className={styles.commandsContainer}>
                     <ClearChatButton className={styles.commandButton} onClick={clearChat} disabled={!lastQuestionRef.current || isLoading} />
                     <SettingsButton className={styles.commandButton} onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)} />
-                    <InfoButton className={styles.commandButton} onClick={() => setIsInfoPanelOpen(!isInfoPanelOpen)} />
+                    {/* <InfoButton className={styles.commandButton} onClick={() => setIsInfoPanelOpen(!isInfoPanelOpen)} /> */}
                 </div>
             </div>
             <div className={styles.chatRoot}>
@@ -316,7 +338,8 @@ const Chat = () => {
                             {activeChatMode == ChatMode.WorkOnly ? 
                                 <div>
                                     <div className={styles.chatEmptyStateHeader}> 
-                                        <BuildingMultipleFilled fontSize={"100px"} primaryFill={"rgba(27, 74, 239, 1)"} aria-hidden="true" aria-label="Chat with your Work Data logo" />
+                                        <img className={styles.chatEmptyStateLogo} src={DivCore_DkGray} alt="Divco Azure OpenAI" />
+                                        {/* <BuildingMultipleFilled fontSize={"100px"} primaryFill={"rgba(27, 74, 239, 1)"} aria-hidden="true" aria-label="Chat with your Work Data logo" /> */}
                                         </div>
                                     <h1 className={styles.chatEmptyStateTitle}>Chat with your work data</h1>
                                 </div>
@@ -338,12 +361,12 @@ const Chat = () => {
                             <span className={styles.chatEmptyObjectives}>
                                 <i>Information Assistant uses AI. Check for mistakes.   </i><a href="https://github.com/microsoft/PubSec-Info-Assistant/blob/main/docs/transparency.md" target="_blank" rel="noopener noreferrer">Transparency Note</a>
                             </span>
-                            {activeChatMode != ChatMode.Ungrounded &&
+                            {/* {activeChatMode != ChatMode.Ungrounded &&
                                 <div>
                                     <h2 className={styles.chatEmptyStateSubtitle}>Ask anything or try an example</h2>
                                     <ExampleList onExampleClicked={onExampleClicked} />
                                 </div>
-                            }
+                            } */}
                         </div>
                     ) : (
                         <div className={styles.chatMessageStream}>
@@ -409,11 +432,11 @@ const Chat = () => {
                         )}
                         <QuestionInput
                             clearOnSend
-                            placeholder="Type a new question (e.g. Who are Microsoft's top executives, provided as a table?)"
+                            placeholder="Type a new question"
                             disabled={isLoading}
                             onSend={question => makeApiRequest(question, defaultApproach, {}, {}, {})}
                             onAdjustClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)}
-                            onInfoClick={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
+                            // onInfoClick={() => setIsInfoPanelOpen(!isInfoPanelOpen)}
                             showClearChat={true}
                             onClearClick={clearChat}
                             onRegenerateClick={() => makeApiRequest(lastQuestionRef.current, defaultApproach, {}, {}, {})}
@@ -453,7 +476,7 @@ const Chat = () => {
                             </div>
                         </div>
                     }
-                    {activeChatMode != ChatMode.Ungrounded &&
+                    {/*{activeChatMode != ChatMode.Ungrounded &&
                         <SpinButton
                             className={styles.chatSettingsSeparator}
                             label="Retrieve this many documents from search:"
@@ -472,19 +495,19 @@ const Chat = () => {
                         />
                     }
                     <TextField className={styles.chatSettingsSeparator} defaultValue={userPersona} label="User Persona" onChange={onUserPersonaChange} />
-                    <TextField className={styles.chatSettingsSeparator} defaultValue={systemPersona} label="System Persona" onChange={onSystemPersonaChange} />
+                    <TextField className={styles.chatSettingsSeparator} defaultValue={systemPersona} label="System Persona" onChange={onSystemPersonaChange} /> */}
                     <ResponseLengthButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseLengthChange} defaultValue={responseLength} />
-                    <ResponseTempButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseTempChange} defaultValue={responseTemp} />
+                    <ResponseTempButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseTempChange} defaultValue={currentResponseTempByChatMode[activeChatMode]} />
                     {activeChatMode != ChatMode.Ungrounded &&
                         <div>
                             <Separator className={styles.chatSettingsSeparator}>Filter Search Results by</Separator>
-                            <FolderPicker allowFolderCreation={false} onSelectedKeyChange={onSelectedKeyChanged} preSelectedKeys={selectedFolders} />
+                            {/* <FolderPicker allowFolderCreation={false} onSelectedKeyChange={onSelectedKeyChanged} preSelectedKeys={selectedFolders} /> */}
                             <TagPickerInline allowNewTags={false} onSelectedTagsChange={onSelectedTagsChange} preSelectedTags={selectedTags} />
                         </div>
                     }
                 </Panel>
 
-                <Panel
+                {/* <Panel
                     headerText="Information"
                     isOpen={isInfoPanelOpen}
                     isBlocking={false}
@@ -495,7 +518,7 @@ const Chat = () => {
                     <div className={styles.resultspanel}>
                         <InfoContent />
                     </div>
-                </Panel>
+                </Panel> */}
             </div>
         </div>
     );

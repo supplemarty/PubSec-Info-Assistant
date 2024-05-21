@@ -5,15 +5,15 @@ import { useState, useEffect } from "react";
 import { Dropdown, DropdownMenuItemType, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 import { Stack } from "@fluentui/react";
 import { DocumentsDetailList, IDocument } from "./DocumentsDetailList";
-import { ArrowClockwise24Filled } from "@fluentui/react-icons";
+// import { ArrowClockwise24Filled } from "@fluentui/react-icons";
 import { animated, useSpring } from "@react-spring/web";
-import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, FileState, getFolders, getTags } from "../../api";
+import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, FileState, getTags } from "../../api";
 
 import styles from "./FileStatus.module.css";
 
 const dropdownTimespanStyles: Partial<IDropdownStyles> = { dropdown: { width: 150 } };
 const dropdownFileStateStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
-const dropdownFolderStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
+// const dropdownFolderStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 const dropdownTagStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 
 const dropdownTimespanOptions = [
@@ -52,7 +52,7 @@ export const FileStatus = ({ className }: Props) => {
     const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
     const [SelectedTagItem, setSelectedTagItem] = useState<IDropdownOption>();
 
-    const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);
+    // const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);
     const [tagOptions, setTagOptions] = useState<IDropdownOption[]>([]);
     const [files, setFiles] = useState<IDocument[]>();
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -65,9 +65,9 @@ export const FileStatus = ({ className }: Props) => {
         setSelectedFileStateItem(item);
     };
 
-    const onFolderChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
-        setSelectedFolderItem(item);
-    };    
+    // const onFolderChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
+    //     setSelectedFolderItem(item);
+    // };    
 
     const onTagChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
         setSelectedTagItem(item);
@@ -107,7 +107,7 @@ export const FileStatus = ({ className }: Props) => {
         const request: GetUploadStatusRequest = {
             timeframe: timeframe,
             state: selectedFileStateItem?.key == undefined ? FileState.All : selectedFileStateItem?.key as FileState,
-            folder: SelectedFolderItem?.key == undefined ? 'Root' : SelectedFolderItem?.key as string,
+            // folder: SelectedFolderItem?.key == undefined ? 'Root' : SelectedFolderItem?.key as string,
             tag: SelectedTagItem?.key == undefined ? 'All' : SelectedTagItem?.key as string
         }
         const response = await getAllUploadStatus(request);
@@ -117,17 +117,17 @@ export const FileStatus = ({ className }: Props) => {
     }
 
     // fetch unique folder names from Azure Blob Storage
-    const fetchFolders = async () => {
-        try {
-            const folders = await getFolders(); // Await the promise
-            const rootOption = { key: 'Root', text: 'Root' }; // Create the "Root" option            
-            const folderDropdownOptions = [rootOption, ...folders.map((folder: string) => ({ key: folder, text: folder }))];
-            setFolderOptions(folderDropdownOptions);
-        }
-        catch (e) {
-            console.log(e);
-        }
-    };
+    // const fetchFolders = async () => {
+    //     try {
+    //         const folders = await getFolders(); // Await the promise
+    //         const rootOption = { key: 'Root', text: 'Root' }; // Create the "Root" option            
+    //         const folderDropdownOptions = [rootOption, ...folders.map((folder: string) => ({ key: folder, text: folder }))];
+    //         setFolderOptions(folderDropdownOptions);
+    //     }
+    //     catch (e) {
+    //         console.log(e);
+    //     }
+    // };
 
     // fetch unique tag names from Azure Cosmos DB
     const fetchTags = async () => {
@@ -142,11 +142,9 @@ export const FileStatus = ({ className }: Props) => {
         }
     };
 
-
-
     // Effect to fetch folders & tags on mount
     useEffect(() => {
-        fetchFolders();
+        // fetchFolders();
         fetchTags();        
     }, []);
 
@@ -218,7 +216,7 @@ export const FileStatus = ({ className }: Props) => {
                         styles={dropdownFileStateStyles}
                         aria-label="file state options for file statuses to be displayed"
                     />
-                <Dropdown
+                {/* <Dropdown
                     label="Folder:"
                     defaultSelectedKey={'Root'}
                     onChange={onFolderChange}
@@ -226,7 +224,7 @@ export const FileStatus = ({ className }: Props) => {
                     options={folderOptions}
                     styles={dropdownFolderStyles}
                     aria-label="folder options for file statuses to be displayed"
-                />
+                /> */}
                 <Dropdown
                     label="Tag:"
                     defaultSelectedKey={'All'}

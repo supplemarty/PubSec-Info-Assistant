@@ -15,7 +15,7 @@ interface Props {
     placeholder?: string;
     clearOnSend?: boolean;
     onAdjustClick?: () => void;
-    onInfoClick?: () => void;
+    // onInfoClick?: () => void;
     showClearChat?: boolean;
     onClearClick?: () => void;
     onRegenerateClick?: () => void;

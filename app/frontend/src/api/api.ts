@@ -11,20 +11,49 @@ import { ChatResponse,
     GetWarningBanner, 
     StatusLogEntry, 
     StatusLogResponse, 
-    ApplicationTitle, 
+    // ApplicationTitle, 
     GetTagsResponse,
     DeleteItemRequest,
     ResubmitItemRequest,
     GetFeatureFlagsResponse,
     getMaxCSVFileSizeType,
+    GetAppIdentityResponse
     } from "./models";
 
-export async function chatApi(options: ChatRequest): Promise<ChatResponse> {
-    const response = await fetch("/chat", {
-        method: "POST",
+
+import { IdentityManager } from "../identity";
+
+async function httpHeaders() : Promise<HeadersInit> {
+    const u = await IdentityManager.GetCurrentUser(true);
+    const h =
+    {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${u.AccessToken}`
+    };
+    return h;
+}
+
+export async function getAppIdentity() : Promise<GetAppIdentityResponse> {
+    const response = await fetch("/getAppIdentity", {
+        method: "GET",
         headers: {
             "Content-Type": "application/json"
-        },
+        }
+    });
+    const parsedResponse: GetAppIdentityResponse = await response.json();
+    if (response.status > 299 || !response.ok) {
+        console.log(response);
+        throw Error(parsedResponse.error || "Unknown error");
+    }
+    console.log(parsedResponse);
+    return parsedResponse;
+}
+
+export async function chatApi(options: ChatRequest): Promise<ChatResponse> {
+
+    const response = await fetch("/chat", {
+        method: "POST",
+        headers: await httpHeaders(),
         body: JSON.stringify({
             history: options.history,
             approach: options.approach,
@@ -44,7 +73,7 @@ export async function chatApi(options: ChatRequest): Promise<ChatResponse> {
                 ai_persona: options.overrides?.aiPersona,
                 response_length: options.overrides?.responseLength,
                 response_temp: options.overrides?.responseTemp,
-                selected_folders: options.overrides?.selectedFolders,
+                // selected_folders: options.overrides?.selectedFolders,
                 selected_tags: options.overrides?.selectedTags
             },
             citation_lookup: options.citation_lookup,
@@ -81,15 +110,14 @@ export async function getBlobClientUrl(): Promise<string> {
 }
 
 export async function getAllUploadStatus(options: GetUploadStatusRequest): Promise<AllFilesUploadStatus> {
+
     const response = await fetch("/getalluploadstatus", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: await httpHeaders(),
         body: JSON.stringify({
             timeframe: options.timeframe,
             state: options.state as string,
-            folder: options.folder as string,
+            // folder: options.folder as string,
             tag: options.tag as string
             })
         });
@@ -152,36 +180,34 @@ export async function resubmitItem(options: ResubmitItemRequest): Promise<boolea
 }
 
 
-export async function getFolders(): Promise<string[]> {
-    const response = await fetch("/getfolders", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            })
-        });
+// export async function getFolders(): Promise<string[]> {
+//     const response = await fetch("/getfolders", {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/json"
+//         },
+//         body: JSON.stringify({
+//             })
+//         });
     
-    const parsedResponse: any = await response.json();
-    if (response.status > 299 || !response.ok) {
-        throw Error(parsedResponse.error || "Unknown error");
-    }
-    // Assuming parsedResponse is the array of strings (folder names) we want
-    // Check if it's actually an array and contains strings
-    if (Array.isArray(parsedResponse) && parsedResponse.every(item => typeof item === 'string')) {
-        return parsedResponse;
-    } else {
-        throw new Error("Invalid response format");
-    }
-}
+//     const parsedResponse: any = await response.json();
+//     if (response.status > 299 || !response.ok) {
+//         throw Error(parsedResponse.error || "Unknown error");
+//     }
+//     // Assuming parsedResponse is the array of strings (folder names) we want
+//     // Check if it's actually an array and contains strings
+//     if (Array.isArray(parsedResponse) && parsedResponse.every(item => typeof item === 'string')) {
+//         return parsedResponse;
+//     } else {
+//         throw new Error("Invalid response format");
+//     }
+// }
 
 
 export async function getTags(): Promise<string[]> {
     const response = await fetch("/gettags", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: await httpHeaders(),
         body: JSON.stringify({
             })
         });
@@ -452,23 +478,23 @@ export async function getCitationObj(citation: string): Promise<ActiveCitation> 
     return parsedResponse;
 }
 
-export async function getApplicationTitle(): Promise<ApplicationTitle> {
-    console.log("fetch Application Titless");
-    const response = await fetch("/getApplicationTitle", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
+// export async function getApplicationTitle(): Promise<ApplicationTitle> {
+//     console.log("fetch Application Titless");
+//     const response = await fetch("/getApplicationTitle", {
+//         method: "GET",
+//         headers: {
+//             "Content-Type": "application/json"
+//         }
+//     });
 
-    const parsedResponse: ApplicationTitle = await response.json();
-    if (response.status > 299 || !response.ok) {
-        console.log(response);
-        throw Error(parsedResponse.error || "Unknown error");
-    }
-    console.log(parsedResponse);
-    return parsedResponse;
-}
+//     const parsedResponse: ApplicationTitle = await response.json();
+//     if (response.status > 299 || !response.ok) {
+//         console.log(response);
+//         throw Error(parsedResponse.error || "Unknown error");
+//     }
+//     console.log(parsedResponse);
+//     return parsedResponse;
+// }
 
 export async function getAllTags(): Promise<GetTagsResponse> {
     const response = await fetch("/getalltags", {

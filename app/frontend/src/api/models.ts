@@ -33,7 +33,7 @@ export type ChatRequestOverrides = {
     aiPersona?: string;
     responseLength?: number;
     responseTemp?: number;
-    selectedFolders?: string;
+    // selectedFolders?: string;
     selectedTags?: string;
 };
 
@@ -101,7 +101,7 @@ export type AllFolders = {
 export type GetUploadStatusRequest = {
     timeframe: number;
     state: FileState;
-    folder: string;
+    // folder: string;
     tag: string
 }
 
@@ -215,5 +215,11 @@ export type GetFeatureFlagsResponse = {
     ENABLE_MATH_ASSISTANT: boolean;
     ENABLE_TABULAR_DATA_ASSISTANT: boolean;
     ENABLE_MULTIMEDIA: boolean;
+    error?: string;
+}
+
+export type GetAppIdentityResponse = {
+    AZURE_TENANT_ID: string;
+    AZURE_WEBAPP_CLIENT_ID: string;
     error?: string;
 }
