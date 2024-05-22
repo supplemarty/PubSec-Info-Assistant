@@ -133,10 +133,6 @@ jq -r  '
             "env_var": "BING_SEARCH_ENDPOINT"
         },
         {
-            "path": "BING_SEARCH_KEY",
-            "env_var": "BING_SEARCH_KEY"
-        },
-        {
             "path": "ENABLEE_BING_SAFE_SEARCH",
             "env_var": "ENABLE_BING_SAFE_SEARCH"
         },
@@ -219,6 +215,11 @@ secretNames=("AZURE-SEARCH-SERVICE-KEY" "AZURE-BLOB-STORAGE-KEY" "BLOB-CONNECTIO
 # Retrieve and export each secret
 for secretName in "${secretNames[@]}"; do
   secretValue=$(az keyvault secret show --name $secretName --vault-name $keyVaultName --query value -o tsv)
-  envVarName=$(echo $secretName | tr '-' '_')
-  echo $envVarName=\'$secretValue\'
+  if [[ "${secretName}" == "BINGSEARCH-KEY" ]] ; then
+    echo BING_SEARCH_KEY=\'$secretValue\'
+  else
+    envVarName=$(echo $secretName | tr '-' '_')
+    echo $envVarName=\'$secretValue\'
+  fi
+  
 done        
