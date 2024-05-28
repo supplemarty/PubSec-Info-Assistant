@@ -290,7 +290,13 @@ def get_tags(blob_path):
             tags_list = [unquote(tag.strip()) for tag in tags]
     else:
         tags_list = []
-    return tags_list
+    
+    if ((blob_properties.tag_count or 0) > 0):
+        blobTags = blob_client.get_blob_tags()
+    else:
+        blobTags = {}
+
+    return tags_list, blobTags
 
 
 def poll_queue() -> None:
@@ -333,7 +339,7 @@ def poll_queue() -> None:
             index_chunks = []
                                     
             # get tags to apply to the chunk
-            tag_list = get_tags(blob_path)
+            tag_list, blobTags = get_tags(blob_path)
 
             # Iterate over the chunks in the container
             chunk_list = container_client.list_blobs(name_starts_with=chunk_folder_path)

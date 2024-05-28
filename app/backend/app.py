@@ -325,7 +325,7 @@ async def chat(request: Request):
         return response
 
     except Exception as ex:
-        log.error(f"Error in chat:: {ex}")
+        log.error(f"Error in chat: {ex}")
         raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 

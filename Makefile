@@ -66,3 +66,6 @@ functional-tests: extract-env ## Run functional tests to check the processing pi
 
 run-migration: ## Migrate from BICEP to Terraform
 	python ./scripts/merge-databases.py
+
+marty: extract-env ## Run functional tests to check the processing pipeline is working
+	@./scripts/marty.sh

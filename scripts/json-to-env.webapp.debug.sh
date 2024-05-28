@@ -158,7 +158,7 @@ jq -r  '
             "env_var": "AZURE_TENANT_ID"
         },
         {
-            "path": "AZURE_WEBAPP_CLIENT_ID",
+            "path": "AZURE_CLIENT_ID",
             "env_var": "AZURE_WEBAPP_CLIENT_ID"
         }
     ]

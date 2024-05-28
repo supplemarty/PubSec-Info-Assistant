@@ -12,6 +12,7 @@ import openai
 from approaches.approach import Approach
 from core.messagebuilder import MessageBuilder
 from core.modelhelper import get_token_limit
+from core.chatcompletionwrapper import test_chatcompletion
 
 class ChatWebRetrieveRead(Approach):
     """Class to help perform RAG based on Bing Search and ChatGPT."""
@@ -166,37 +167,37 @@ class ChatWebRetrieveRead(Approach):
         """
         client = WebSearchClient(AzureKeyCredential(self.bing_search_key), endpoint=self.bing_search_endpoint)
 
-        try:
-            if self.bing_safe_search:
-                safe_search = SafeSearch.STRICT
-            else:
-                safe_search = SafeSearch.OFF
+        # try:
+        if self.bing_safe_search:
+            safe_search = SafeSearch.STRICT
+        else:
+            safe_search = SafeSearch.OFF
 
-            web_data = client.web.search(
-                query=user_query,
-                answer_count=10,
-                safe_search=safe_search
-            )
+        web_data = client.web.search(
+            query=user_query,
+            answer_count=10,
+            safe_search=safe_search
+        )
 
-            if web_data.web_pages.value:
+        if web_data.web_pages and web_data.web_pages.value:
 
-                url_snippet_dict = {}
-                for idx, page in enumerate(web_data.web_pages.value):
-                    self.citations[f"url{idx}"] = {
-                        "citation": page.url,
-                        "source_path": "",
-                        "page_number": "0",
-                    }
+            url_snippet_dict = {}
+            for idx, page in enumerate(web_data.web_pages.value):
+                self.citations[f"url{idx}"] = {
+                    "citation": page.url,
+                    "source_path": "",
+                    "page_number": "0",
+                }
 
-                    url_snippet_dict[page.url] = page.snippet.replace("[", "").replace("]", "")
+                url_snippet_dict[page.url] = page.snippet.replace("[", "").replace("]", "")
 
-                return url_snippet_dict
+            return url_snippet_dict
 
-            else:
-                print("Didn't see any Web data..")
+        else:
+            raise ValueError("Didn't see any Web data.")
 
-        except Exception as err:
-            print("Encountered exception. {}".format(err))
+        # except Exception as err:
+        #     print("Encountered exception. {}".format(err))
 
     async def make_chat_completion(self, messages):
         """
@@ -216,7 +217,8 @@ class ChatWebRetrieveRead(Approach):
             temperature=0.6,
             n=1
         )
-        return chat_completion.choices[0].message.content
+        
+        return test_chatcompletion(chat_completion)
     
     def get_messages_builder(
         self,

@@ -46,6 +46,7 @@ export type ChatResponse = {
     work_citation_lookup: { [key: string]: { citation: string; source_path: string; page_number: string } };
     web_citation_lookup: { [key: string]: { citation: string; source_path: string; page_number: string } };
     error?: string;
+    detail?: string;
 };
 
 export type ChatTurn = {

@@ -1,14 +1,15 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { BlobServiceClient } from "@azure/storage-blob";
+import { BlobServiceClient, BlockBlobParallelUploadOptions } from "@azure/storage-blob";
 import classNames from "classnames";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DropZone } from "./drop-zone"
 import styles from "./file-picker.module.css";
 import { FilesList } from "./files-list";
-import { getBlobClientUrl, logStatus, StatusLogClassification, StatusLogEntry, StatusLogState } from "../../api"
+import { getBlobClientUrl, logStatus, StatusLogClassification, StatusLogEntry, StatusLogState } from "../../api";
+import { IdentityManager } from "../../identity";
 
 interface Props {
   folderPath: string;
@@ -45,6 +46,9 @@ const FilePicker = ({folderPath, tags}: Props) => {
   // execute the upload operation
   const handleUpload = useCallback(async () => {
     try {
+
+      const user = await IdentityManager.GetCurrentUser(true);
+
       const data = new FormData();
       console.log("files", files);
       setUploadStarted(true);
@@ -61,9 +65,10 @@ const FilePicker = ({folderPath, tags}: Props) => {
         var filePath = (folderPath == "") ? file.name : folderPath + "/" + file.name;
         const blobClient = containerClient.getBlockBlobClient(filePath);
         // set mimetype as determined from browser with file upload control
-        const options = {
+        const options : BlockBlobParallelUploadOptions = {
           blobHTTPHeaders: { blobContentType: file.type },
-          metadata: { tags: tags.map(encodeURIComponent).join(",") }
+          metadata: { tags: tags.map(encodeURIComponent).join(",") },
+          tags: { "email": user.Email || "" }
         };
 
         // upload file
