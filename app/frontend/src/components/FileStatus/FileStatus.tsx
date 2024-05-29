@@ -11,20 +11,20 @@ import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, File
 
 import styles from "./FileStatus.module.css";
 
-const dropdownTimespanStyles: Partial<IDropdownStyles> = { dropdown: { width: 150 } };
+// const dropdownTimespanStyles: Partial<IDropdownStyles> = { dropdown: { width: 150 } };
 const dropdownFileStateStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 // const dropdownFolderStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 const dropdownTagStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 
-const dropdownTimespanOptions = [
-    { key: 'Time Range', text: 'End time range', itemType: DropdownMenuItemType.Header },
-    { key: '4hours', text: '4 hours' },
-    { key: '12hours', text: '12 hours' },
-    { key: '24hours', text: '24 hours' },
-    { key: '7days', text: '7 days' },
-    { key: '30days', text: '30 days' },
-    { key: '-1days', text: 'All' },
-  ];
+// const dropdownTimespanOptions = [
+//     { key: 'Time Range', text: 'End time range', itemType: DropdownMenuItemType.Header },
+//     { key: '4hours', text: '4 hours' },
+//     { key: '12hours', text: '12 hours' },
+//     { key: '24hours', text: '24 hours' },
+//     { key: '7days', text: '7 days' },
+//     { key: '30days', text: '30 days' },
+//     { key: '-1days', text: 'All' },
+//   ];
 
 const dropdownFileStateOptions = [
     { key: 'FileStates', text: 'File States', itemType: DropdownMenuItemType.Header },
@@ -47,9 +47,9 @@ interface Props {
 }
 
 export const FileStatus = ({ className }: Props) => {
-    const [selectedTimeFrameItem, setSelectedTimeFrameItem] = useState<IDropdownOption>();
+    // const [selectedTimeFrameItem, setSelectedTimeFrameItem] = useState<IDropdownOption>();
     const [selectedFileStateItem, setSelectedFileStateItem] = useState<IDropdownOption>();
-    const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
+    // const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
     const [SelectedTagItem, setSelectedTagItem] = useState<IDropdownOption>();
 
     // const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);
@@ -57,9 +57,9 @@ export const FileStatus = ({ className }: Props) => {
     const [files, setFiles] = useState<IDocument[]>();
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    const onTimeSpanChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
-        setSelectedTimeFrameItem(item);
-    };
+    // const onTimeSpanChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
+    //     setSelectedTimeFrameItem(item);
+    // };
 
     const onFileStateChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
         setSelectedFileStateItem(item);
@@ -79,30 +79,30 @@ export const FileStatus = ({ className }: Props) => {
 
     const onGetStatusClick = async () => {
         setIsLoading(true);
-        var timeframe = 4;
-        switch (selectedTimeFrameItem?.key as string) {
-            case "4hours":
-                timeframe = 4;
-                break;
-            case "12hours":
-                timeframe = 12;
-                break;
-            case "24hours":
-                timeframe = 24;
-                break;
-            case "7days":
-                timeframe = 168;
-                break;
-            case "30days":
-                timeframe = 720;
-                break;
-            case "-1days":
-                timeframe = -1;
-                break;
-            default:
-                timeframe = 4;
-                break;
-        }
+        const timeframe = -1;
+        // switch (selectedTimeFrameItem?.key as string) {
+        //     case "4hours":
+        //         timeframe = 4;
+        //         break;
+        //     case "12hours":
+        //         timeframe = 12;
+        //         break;
+        //     case "24hours":
+        //         timeframe = 24;
+        //         break;
+        //     case "7days":
+        //         timeframe = 168;
+        //         break;
+        //     case "30days":
+        //         timeframe = 720;
+        //         break;
+        //     case "-1days":
+        //         timeframe = -1;
+        //         break;
+        //     default:
+        //         timeframe = 4;
+        //         break;
+        // }
 
         const request: GetUploadStatusRequest = {
             timeframe: timeframe,
@@ -198,6 +198,7 @@ export const FileStatus = ({ className }: Props) => {
     return (
         <div className={styles.container}>
             <div className={`${styles.options} ${className ?? ""}`} >
+            {/*
                 <Dropdown
                         label="Uploaded in last:"
                         defaultSelectedKey='4hours'
@@ -207,6 +208,7 @@ export const FileStatus = ({ className }: Props) => {
                         styles={dropdownTimespanStyles}
                         aria-label="timespan options for file statuses to be displayed"
                     />
+    */}
                 <Dropdown
                         label="File State:"
                         defaultSelectedKey={'ALL'}

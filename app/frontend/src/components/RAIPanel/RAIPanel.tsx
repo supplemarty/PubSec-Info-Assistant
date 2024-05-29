@@ -4,7 +4,7 @@
 import { Options16Filled, ArrowSync16Filled, Briefcase16Filled, Globe16Filled, BuildingMultipleFilled } from "@fluentui/react-icons";
 
 import styles from "./RAIPanel.module.css";
-import { Icon } from "@fluentui/react";
+// import { Icon } from "@fluentui/react";
 import { Approaches, ChatMode } from "../../api";
 
 interface Props {
@@ -29,7 +29,7 @@ export const RAIPanel = ({approach, chatMode, onAdjustClick, onRegenerateClick, 
                 <ArrowSync16Filled primaryFill="rgba(133, 133, 133, 1)" />
                 <span className={styles.adjustInputText}>Regenerate</span>
             </div>
-            {(approach == Approaches.ChatWebRetrieveRead && chatMode == ChatMode.WorkPlusWeb) &&
+            {/* {(approach == Approaches.ChatWebRetrieveRead && chatMode == ChatMode.WorkPlusWeb) &&
                     <>
                         <div className={styles.adjustInput} onClick={onRagSearchClicked}>
                             <BuildingMultipleFilled primaryFill="rgba(133, 133, 133, 1)" />
@@ -52,7 +52,7 @@ export const RAIPanel = ({approach, chatMode, onAdjustClick, onRegenerateClick, 
                             <span className={styles.adjustInputText}>Compare with Web</span>
                         </div>
                     </>
-            }
+            } */}
         </div>
     );
 };

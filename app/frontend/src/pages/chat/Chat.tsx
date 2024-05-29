@@ -33,15 +33,20 @@ const Chat = () => {
 
 
     const defaultChatMode : ChatMode = ChatMode.WorkOnly;
-    interface IResponseTempByChatMode {
-        [ChatMode.WorkOnly]: number,
-        [ChatMode.Ungrounded]: number,
-        [ChatMode.WorkPlusWeb]: number
-    }
-    const defaultResponseTempByChatMode: IResponseTempByChatMode = {
+    // interface IResponseTempByChatMode {
+    //     [ChatMode.WorkOnly]: number,
+    //     [ChatMode.Ungrounded]: number,
+    //     [ChatMode.WorkPlusWeb]: number
+    // }
+    const defaultResponseTempByChatMode = {
         [ChatMode.WorkOnly]: 0,
         [ChatMode.Ungrounded]: 0.6,
         [ChatMode.WorkPlusWeb]: 0
+    };
+    const defaultResponseLengthByChatMode = {
+        [ChatMode.WorkOnly]: 2048,
+        [ChatMode.Ungrounded]: 2048,
+        [ChatMode.WorkPlusWeb]: 2048
     };
     // let currentResponseTempByChatMode : IResponseTempByChatMode = {
     //     [ChatMode.WorkOnly]: defaultResponseTempByChatMode[ChatMode.WorkOnly],
@@ -51,7 +56,8 @@ const Chat = () => {
 
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
     // const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
-    const [retrieveCount] = useState<number>(5);
+    // const [retrieveCount] = useState<number>(5);
+    const retrieveCount = 5;
     const [useSuggestFollowupQuestions] = useState<boolean>(false);
     const [userPersona] = useState<string>("analyst");
     const [systemPersona] = useState<string>("an Assistant");
@@ -59,12 +65,12 @@ const Chat = () => {
     // Setting responseLength to 2048 by default, this will effect the default display of the ResponseLengthButtonGroup below.
     // It must match a valid value of one of the buttons in the ResponseLengthButtonGroup.tsx file. 
     // If you update the default value here, you must also update the default value in the onResponseLengthChange method.
-    const [responseLength, setResponseLength] = useState<number>(2048);
+    const [responseLengthByChatMode, setResponseLengthByChatMode] = useState(defaultResponseLengthByChatMode);
 
     // Setting responseTemp to 0.6 by default, this will effect the default display of the ResponseTempButtonGroup below.
     // It must match a valid value of one of the buttons in the ResponseTempButtonGroup.tsx file.
     // If you update the default value here, you must also update the default value in the onResponseTempChange method.
-    const [responseTempByChatMode, setResponseTempByChatMode] = useState<IResponseTempByChatMode>(defaultResponseTempByChatMode);
+    const [responseTempByChatMode, setResponseTempByChatMode] = useState(defaultResponseTempByChatMode);
 
     const [activeChatMode, setChatMode] = useState<ChatMode>(defaultChatMode);
     const [defaultApproach, setDefaultApproach] = useState<number>(Approaches.ReadRetrieveRead);
@@ -144,7 +150,7 @@ const Chat = () => {
                     userPersona: userPersona,
                     systemPersona: systemPersona,
                     aiPersona: "",
-                    responseLength: responseLength,
+                    responseLength: responseLengthByChatMode[activeChatMode],
                     responseTemp: responseTempByChatMode[activeChatMode],
                     // selectedFolders: selectedFolders.includes("selectAll") ? "All" : selectedFolders.length == 0 ? "All" : selectedFolders.join(","),
                     selectedTags: selectedTags.map(tag => tag.name).join(",")
@@ -176,42 +182,46 @@ const Chat = () => {
     };
 
     const onResponseLengthChange = (_ev: any) => {
-        for (let node of _ev.target.parentNode.childNodes) {
-            if (node.value == _ev.target.value) {
-                switch (node.value) {
-                    case "1024":
-                        node.className = `${rlbgstyles.buttonleftactive}`;
-                        break;
-                    case "2048":
-                        node.className = `${rlbgstyles.buttonmiddleactive}`;
-                        break;
-                    case "3072":
-                        node.className = `${rlbgstyles.buttonrightactive}`;
-                        break;
-                    default:
-                        //do nothing
-                        break;
-                }
-            }
-            else {
-                switch (node.value) {
-                    case "1024":
-                        node.className = `${rlbgstyles.buttonleft}`;
-                        break;
-                    case "2048":
-                        node.className = `${rlbgstyles.buttonmiddle}`;
-                        break;
-                    case "3072":
-                        node.className = `${rlbgstyles.buttonright}`;
-                        break;
-                    default:
-                        //do nothing
-                        break;
-                }
-            }
-        }
+        // for (let node of _ev.target.parentNode.childNodes) {
+        //     if (node.value == _ev.target.value) {
+        //         switch (node.value) {
+        //             case "1024":
+        //                 node.className = `${rlbgstyles.buttonleftactive}`;
+        //                 break;
+        //             case "2048":
+        //                 node.className = `${rlbgstyles.buttonmiddleactive}`;
+        //                 break;
+        //             case "3072":
+        //                 node.className = `${rlbgstyles.buttonrightactive}`;
+        //                 break;
+        //             default:
+        //                 //do nothing
+        //                 break;
+        //         }
+        //     }
+        //     else {
+        //         switch (node.value) {
+        //             case "1024":
+        //                 node.className = `${rlbgstyles.buttonleft}`;
+        //                 break;
+        //             case "2048":
+        //                 node.className = `${rlbgstyles.buttonmiddle}`;
+        //                 break;
+        //             case "3072":
+        //                 node.className = `${rlbgstyles.buttonright}`;
+        //                 break;
+        //             default:
+        //                 //do nothing
+        //                 break;
+        //         }
+        //     }
+        // }
         // the or value here needs to match the default value assigned to responseLength above.
-        setResponseLength(_ev.target.value as number || 2048)
+        let v = parseInt(_ev.target.value);
+        if (isNaN(v)) v = 2048;
+        const nv = { ...responseLengthByChatMode, [activeChatMode] : v};
+
+        setResponseLengthByChatMode(nv)
     };
 
     const onResponseTempChange = (_ev: any) => {
@@ -521,7 +531,7 @@ const Chat = () => {
                     }
                     <TextField className={styles.chatSettingsSeparator} defaultValue={userPersona} label="User Persona" onChange={onUserPersonaChange} />
                     <TextField className={styles.chatSettingsSeparator} defaultValue={systemPersona} label="System Persona" onChange={onSystemPersonaChange} /> */}
-                    <ResponseLengthButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseLengthChange} defaultValue={responseLength} />
+                    <ResponseLengthButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseLengthChange} defaultValue={responseLengthByChatMode[activeChatMode]} />
                     <ResponseTempButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseTempChange} defaultValue={responseTempByChatMode[activeChatMode]} />
                     {activeChatMode != ChatMode.Ungrounded &&
                         <div>
