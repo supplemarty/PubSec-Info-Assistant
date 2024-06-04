@@ -1,6 +1,6 @@
 import { PublicClientApplication, InteractionRequiredAuthError, RedirectRequest, Configuration } from "@azure/msal-browser";
 import { authentication as teamsAuth} from "@microsoft/teams-js";
-import { inTeams } from "./TeamsHelper";
+// import { inTeams } from "./TeamsHelper";
 import { SecureUser } from "./SecureUser";
 import { getAppIdentity } from "../api";
 
@@ -45,15 +45,15 @@ export class IdentityManager {
     {
         let token: string | undefined;
 
-        if (await inTeams()) {        
+        // if (await inTeams()) {        
             
-            token = await teamsAuth.getAuthToken();  
-        }
-        else
-        {        
+        //     token = await teamsAuth.getAuthToken();  
+        // }
+        // else
+        // {        
             await IdentityManager.verifyInitialized();
             token = await IdentityManager.__getAccessToken(login);
-        }
+        // }
 
         if (token) {
             return new SecureUser(token);

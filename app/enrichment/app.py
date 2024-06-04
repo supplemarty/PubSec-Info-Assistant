@@ -28,6 +28,7 @@ from shared_code.utilities_helper import UtilitiesHelper
 from shared_code.status_log import State, StatusClassification, StatusLog
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
+from azure.communication.email import EmailClient
 
 # === ENV Setup ===
 
@@ -57,7 +58,9 @@ ENV = {
     "TARGET_EMBEDDINGS_MODEL": None,
     "EMBEDDING_VECTOR_SIZE": None,
     "AZURE_SEARCH_SERVICE_ENDPOINT": None,
-    "AZURE_BLOB_STORAGE_ENDPOINT": None
+    "AZURE_BLOB_STORAGE_ENDPOINT": None,
+    "EMAIL_CONNECTION_STRING": None,
+    "NOTIFICATION_EMAIL_SENDER": None
 }
 
 for key, value in ENV.items():
@@ -291,12 +294,12 @@ def get_tags(blob_path):
     else:
         tags_list = []
     
-    if ((blob_properties.tag_count or 0) > 0):
-        blobTags = blob_client.get_blob_tags()
-    else:
-        blobTags = {}
+    # if ((blob_properties.tag_count or 0) > 0):
+    #     blobTags = blob_client.get_blob_tags()
+    # else:
+    #     blobTags = {}
 
-    return tags_list, blobTags
+    return tags_list
 
 
 def poll_queue() -> None:
@@ -329,6 +332,7 @@ def poll_queue() -> None:
         message_b64 = message.content
         message_json = json.loads(base64.b64decode(message_b64))
         blob_path = message_json["blob_name"]
+        processing_complete = False
 
         try:  
             statusLog.upsert_document(blob_path, f'Embeddings process started with model {target_embeddings_model}', StatusClassification.INFO, State.PROCESSING)
@@ -339,7 +343,7 @@ def poll_queue() -> None:
             index_chunks = []
                                     
             # get tags to apply to the chunk
-            tag_list, blobTags = get_tags(blob_path)
+            tag_list = get_tags(blob_path)
 
             # Iterate over the chunks in the container
             chunk_list = container_client.list_blobs(name_starts_with=chunk_folder_path)
@@ -418,6 +422,8 @@ def poll_queue() -> None:
             statusLog.upsert_document(blob_path,
                                       'Embeddings process complete',
                                       StatusClassification.INFO, State.COMPLETE)
+            
+            processing_complete = True
 
         except Exception as error:
             # Dequeue message and update the embeddings queued count to limit the max retries
@@ -452,5 +458,34 @@ def poll_queue() -> None:
                 )
 
         statusLog.save_document(blob_path)
+
+        # Send user notification email
+        if (processing_complete):
+            emailaddress = file_directory[:-1]
+            if (emailaddress):
+                try:
+                    email_client = EmailClient.from_connection_string(ENV["EMAIL_CONNECTION_STRING"])
+
+                    email_message = {
+                        "senderAddress": ENV["NOTIFICATION_EMAIL_SENDER"],
+                        "recipients":  {
+                            "to": [{"address": emailaddress }],
+                        },
+                        "content": {
+                            "subject": "DivCore Azure AI Document Processed",
+                            "plainText": f"Your document '{file_name + file_extension}' has been processed and is now available to use in Document Chat!"
+                            
+                        }
+                    }
+
+                    poller = email_client.begin_send(email_message)
+                    email_result = poller.result()
+
+                except Exception as error:
+                    logging.error(f"Failed to send notification email: {str(error)}")
+
+            else:
+                log.debug(f"No Email Address in folder name {file_directory}")
+
 
 

@@ -521,9 +521,9 @@ async def get_tags(request: Request):
         cosmos_client = CosmosClient(url=statusLog._url, credential=statusLog._key)     
         database = cosmos_client.get_database_client(statusLog._database_name)               
         container = database.get_container_client(statusLog._container_name) 
-        userId = getuserid(request)
-        query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags Where c.file_path LIKE 'upload/" + userId + "/%'"  
-        #query_string = "SELECT c.file_path FROM c Where c.file_path LIKE 'upload/Marty/%'"  
+        userid = getuserid(request)
+        query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags Where c.file_path LIKE 'upload/" + userid + "/%'"
+        #query_string = "SELECT c.file_path FROM c Where c.file_path LIKE 'upload/Marty/%'"
         items = list(container.query_items(
             query=query_string,
             enable_cross_partition_query=True
@@ -533,8 +533,8 @@ async def get_tags(request: Request):
         unique_tags = set()
         for item in items:
             tags = item.split(',')
-            unique_tags.update(tags)                  
-                
+            unique_tags.update(tags)
+
     except Exception as ex:
         log.exception("Exception in /gettags")
         raise HTTPException(status_code=500, detail=str(ex)) from ex
@@ -658,7 +658,8 @@ async def get_citation(request: Request):
 #     return response
 
 @app.get("/getalltags")
-async def get_all_tags():
+@requires_auth
+async def get_all_tags(request: Request):
     """
     Get the status of all tags in the system
 
@@ -666,7 +667,8 @@ async def get_all_tags():
         dict: A dictionary containing the status of all tags
     """
     try:
-        results = statusLog.get_all_tags()
+        userid = getuserid(request)
+        results = statusLog.get_all_tags(userid)
     except Exception as ex:
         log.exception("Exception in /getalltags")
         raise HTTPException(status_code=500, detail=str(ex)) from ex

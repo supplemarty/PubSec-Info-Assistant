@@ -9,7 +9,7 @@ import { DropZone } from "./drop-zone"
 import styles from "./file-picker.module.css";
 import { FilesList } from "./files-list";
 import { getBlobClientUrl, logStatus, StatusLogClassification, StatusLogEntry, StatusLogState } from "../../api";
-import { IdentityManager } from "../../identity";
+import { IdentityManager, SecureUser } from "../../identity";
 
 interface Props {
   folderPath: string;
@@ -20,6 +20,7 @@ const FilePicker = ({folderPath, tags}: Props) => {
   const [files, setFiles] = useState<any>([]);
   const [progress, setProgress] = useState(0);
   const [uploadStarted, setUploadStarted] = useState(false);
+  const [user, setUser] = useState<SecureUser>();
 
   // handler called when files are selected via the Dropzone component
   const handleOnChange = useCallback((files: any) => {
@@ -43,11 +44,18 @@ const FilePicker = ({folderPath, tags}: Props) => {
   // whether to show the progress bar or not
   const canShowProgress = useMemo(() => files.length > 0, [files.length]);
 
+  useEffect(() => {
+    IdentityManager.GetCurrentUser(true).then(u => {
+      setUser(u);
+    });
+}, []);
+
+
   // execute the upload operation
   const handleUpload = useCallback(async () => {
     try {
 
-      const user = await IdentityManager.GetCurrentUser(true);
+      // const user = await IdentityManager.GetCurrentUser(true);
 
       const data = new FormData();
       console.log("files", files);
@@ -67,8 +75,7 @@ const FilePicker = ({folderPath, tags}: Props) => {
         // set mimetype as determined from browser with file upload control
         const options : BlockBlobParallelUploadOptions = {
           blobHTTPHeaders: { blobContentType: file.type },
-          metadata: { tags: tags.map(encodeURIComponent).join(",") },
-          tags: { "email": user.Email || "" }
+          metadata: { tags: tags.map(encodeURIComponent).join(",") }
         };
 
         // upload file
@@ -146,6 +153,7 @@ const FilePicker = ({folderPath, tags}: Props) => {
           {`Upload ${files.length} Files`}
         </button>
       ) : null}
+      <div>You will recieve an email at {user?.Email} for each document when it is ready for chat.</div>
     </div>
   );
 };

@@ -499,9 +499,7 @@ export async function getCitationObj(citation: string): Promise<ActiveCitation> 
 export async function getAllTags(): Promise<GetTagsResponse> {
     const response = await fetch("/getalltags", {
         method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
+        headers: await httpHeaders()
     });
 
     const parsedResponse: any = await response.json();
