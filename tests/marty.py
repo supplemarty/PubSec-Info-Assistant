@@ -52,7 +52,7 @@ def emailtest():
         client = EmailClient.from_connection_string(connection_string)
 
         message = {
-            "senderAddress": "DoNotReply@99280c95-b2de-4328-add5-4f08e4844735.azurecomm.net",
+            "senderAddress": "DoNotReply@notify.divcore.com",
             "recipients":  {
                 "to": [{"address": "msupple@divcowest.com" }],
             },
