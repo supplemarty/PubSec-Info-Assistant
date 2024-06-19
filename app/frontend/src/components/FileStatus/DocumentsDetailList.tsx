@@ -262,7 +262,7 @@ export const DocumentsDetailList = ({ items, onFilesSorted, onRefresh }: Props) 
             onColumnClick: onColumnClick,
             onRender: (item: IDocument) => {
                 let src;
-                const supportedFileTypes = ['XML', 'JSON', 'CSV', 'TSV', 'PPTX', 'DOCX', 'PDF', 'TXT', 'XLSX', 'HTM', 'HTML', 'EML', 'MSG'];
+                const supportedFileTypes = ['XML', 'JSON', 'CSV', 'PPTX', 'DOCX', 'PDF', 'TXT', 'XLSX', 'HTM', 'HTML', 'EML', 'MSG'];
                 if (item.fileType === 'PNG' || item.fileType === 'JPEG' || item.fileType === 'JPG') {
                     return (
                         <TooltipHost content={`${item.fileType} file`}>

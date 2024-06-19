@@ -14,6 +14,9 @@ from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from shared_code.utilities_helper import UtilitiesHelper
 from urllib.parse import unquote
+from shared_code.email_notifications import EmailNotifications
+
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
 
 
 azure_blob_connection_string = os.environ["BLOB_CONNECTION_STRING"]
@@ -36,9 +39,6 @@ azure_storage_account = os.environ["BLOB_STORAGE_ACCOUNT"]
 azure_search_service_endpoint = os.environ["AZURE_SEARCH_SERVICE_ENDPOINT"]
 azure_search_service_index = os.environ["AZURE_SEARCH_INDEX"]
 azure_search_service_key = os.environ["AZURE_SEARCH_SERVICE_KEY"]
-
-
-
 
 
 function_name = "FileUploadedFunc"
@@ -155,5 +155,6 @@ def main(myblob: func.InputStream):
         
     except Exception as err:
         statusLog.upsert_document(myblob.name, f"{function_name} - An error occurred - {str(err)}", StatusClassification.ERROR, State.ERROR)
-
+        email_notifications.send_error_email(myblob.name, f"{function_name} - An error occurred - {str(err)}")
+        
     statusLog.save_document(myblob.name)

@@ -10,6 +10,9 @@ from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
 from azure.storage.blob import BlobServiceClient
 from shared_code.status_log import State, StatusClassification, StatusLog
+from shared_code.email_notifications import EmailNotifications
+
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
 
 blob_connection_string = os.environ["BLOB_CONNECTION_STRING"]
 blob_storage_account_upload_container_name = os.environ[
@@ -148,3 +151,4 @@ def main(mytimer: func.TimerRequest) -> None:
                                     StatusClassification.ERROR,
                                     State.ERROR)
             status_log.save_document(doc_path)
+            email_notifications.send_error_email(blob, f"Delete Error: {str(err)}")

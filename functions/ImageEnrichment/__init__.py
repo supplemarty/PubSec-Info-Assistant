@@ -11,6 +11,9 @@ from shared_code.utilities import Utilities, MediaType
 from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from datetime import datetime
+from shared_code.email_notifications import EmailNotifications
+
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
 
 
 azure_blob_storage_account = os.environ["BLOB_STORAGE_ACCOUNT"]
@@ -232,6 +235,7 @@ def main(msg: func.QueueMessage) -> None:
                 StatusClassification.ERROR,
                 State.ERROR,
             )
+            email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - Image analysis failed: {error_details.error_code} {error_details.error_code} {error_details.message}")
 
         if complete_ocr_text not in [None, ""]:
             # Detect language
@@ -290,6 +294,7 @@ def main(msg: func.QueueMessage) -> None:
             StatusClassification.ERROR,
             State.ERROR,
         )
+        email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - An error occurred - {str(error)}")
 
     try:
         file_name, file_extension, file_directory = utilities.get_filename_and_extension(blob_path)
@@ -328,6 +333,7 @@ def main(msg: func.QueueMessage) -> None:
             StatusClassification.ERROR,
             State.ERROR,
         )
+        email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - An error occurred while indexing - {str(err)}")
 
 
     statusLog.save_document(blob_path)

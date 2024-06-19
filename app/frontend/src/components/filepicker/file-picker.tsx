@@ -22,15 +22,27 @@ const FilePicker = ({folderPath, tags}: Props) => {
   const [uploadStarted, setUploadStarted] = useState(false);
   const [user, setUser] = useState<SecureUser>();
 
+  const acceptedFileTypes = ['.XML', '.JSON', '.CSV', '.PPTX', '.DOCX', '.PDF', '.TXT', '.XLSX', '.HTM', '.HTML', '.EML', '.MSG'];
+
   // handler called when files are selected via the Dropzone component
   const handleOnChange = useCallback((files: any) => {
 
-    let filesArray = Array.from(files);
+    let origFilesArray: File[] = Array.from(files);
 
-    filesArray = filesArray.map((file) => ({
-      id: nanoid(),
-      file
-  }));
+    let filesArray: any = [];
+    
+    origFilesArray.forEach((file: File) => {
+      const lastDot = file.name.lastIndexOf('.');
+      const ext = file.name.substring(lastDot).toUpperCase();
+
+      if (acceptedFileTypes.includes(ext)) {
+        filesArray.push({
+             id: nanoid(),
+             file
+         });
+        }
+    });
+
     setFiles(filesArray as any);
     setProgress(0);
     setUploadStarted(false);
@@ -119,7 +131,7 @@ const FilePicker = ({folderPath, tags}: Props) => {
     <div className={styles.wrapper}>
       {/* canvas */}
       <div className={styles.canvas_wrapper}>
-        <DropZone onChange={handleOnChange} accept={files} />
+        <DropZone onChange={handleOnChange} accept={acceptedFileTypes} />
       </div>
 
       {/* files listing */}

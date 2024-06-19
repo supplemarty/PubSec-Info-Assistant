@@ -61,7 +61,7 @@ const Content = () => {
                                 <span className={styles.EmptyObjectivesListItem}>
                                     <DocumentDataFilled fontSize={"40px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Data" />
                                     <span className={styles.EmptyObjectivesListItemText}><b>Data</b><br />
-                                        xml, json, csv, tsv, txt
+                                        xml, json, csv, txt
                                     </span>
                                 </span>
                                 <span className={styles.EmptyObjectivesListItem}>

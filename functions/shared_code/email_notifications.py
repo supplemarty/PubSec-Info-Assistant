@@ -1,6 +1,5 @@
 from azure.communication.email import EmailClient
 
-
 class EmailNotifications:
     """ Class for logging status of various processes to Cosmos DB"""
 
@@ -33,7 +32,6 @@ class EmailNotifications:
                     </body> \
                 </html>"
         
-        
         return html
 
     def send_error_email(self, blob_path, error_msg):
@@ -52,7 +50,6 @@ class EmailNotifications:
             }
         }
 
-        
         return self.internal_send_email(email_message)
 
 
@@ -78,8 +75,3 @@ class EmailNotifications:
         segments = blob_path.split("/")
         idx = 1 if blob_path[0] == "/" else 0
         return segments[idx], segments[idx + 1]
-
-connection_string = "endpoint=https://infoasst-divcoai-azure-communication.unitedstates.communication.azure.com/;accesskey=O90+GyWM9jUvPUGhxgrbYb0PKdAKzB1j3uYhUDwwlLfesjLMfKdnvtrt9PaN56CmnaguxxLAvC7W85kdJWS9bA=="
-ec = EmailNotifications(connection_string, "donotreply@notify.divcore.com", "msupple@divcowest.com")
-blob_name = "MSupple@divcowest.com/LoanCore Portfolio Email.pdf"
-ec.send_error_email(blob_name, "it broke!")

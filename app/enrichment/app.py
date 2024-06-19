@@ -26,9 +26,9 @@ from tenacity import retry, wait_random_exponential, stop_after_attempt
 from sentence_transformers import SentenceTransformer
 from shared_code.utilities_helper import UtilitiesHelper
 from shared_code.status_log import State, StatusClassification, StatusLog
+from shared_code.email_notifications import EmailNotifications
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
-from azure.communication.email import EmailClient
 
 # === ENV Setup ===
 
@@ -60,7 +60,8 @@ ENV = {
     "AZURE_SEARCH_SERVICE_ENDPOINT": None,
     "AZURE_BLOB_STORAGE_ENDPOINT": None,
     "EMAIL_CONNECTION_STRING": None,
-    "NOTIFICATION_EMAIL_SENDER": None
+    "NOTIFICATION_EMAIL_SENDER": None,
+    "ERROR_EMAIL_RECIPS_CSV": None
 }
 
 for key, value in ENV.items():
@@ -76,6 +77,8 @@ openai.api_base = ENV["AZURE_OPENAI_ENDPOINT"]
 openai.api_type = "azure"
 openai.api_key = ENV["AZURE_OPENAI_SERVICE_KEY"]
 openai.api_version = "2023-12-01-preview"
+
+email_notifications = EmailNotifications(ENV["EMAIL_CONNECTION_STRING"], ENV["NOTIFICATION_EMAIL_SENDER"], ENV["ERROR_EMAIL_RECIPS_CSV"])
 
 class AzOAIEmbedding(object):
     """A wrapper for a Azure OpenAI Embedding model"""
@@ -456,36 +459,19 @@ def poll_queue() -> None:
                     StatusClassification.ERROR,
                     State.ERROR,
                 )
+                email_notifications.send_error_email(blob_path, f"Max Requeue: {str(error)}")
 
         statusLog.save_document(blob_path)
 
         # Send user notification email
         if (processing_complete):
-            emailaddress = file_directory[:-1]
-            if (emailaddress):
-                try:
-                    email_client = EmailClient.from_connection_string(ENV["EMAIL_CONNECTION_STRING"])
+            try:
+                email_body = f"Your document has been processed and is now available to use in Document Chat!"
+                email_notifications.send_email(blob_path, "DivCore Azure AI Document Processed", email_body)
 
-                    email_message = {
-                        "senderAddress": ENV["NOTIFICATION_EMAIL_SENDER"],
-                        "recipients":  {
-                            "to": [{"address": emailaddress }],
-                        },
-                        "content": {
-                            "subject": "DivCore Azure AI Document Processed",
-                            "plainText": f"Your document '{file_name + file_extension}' has been processed and is now available to use in Document Chat!"
-                            
-                        }
-                    }
+            except Exception as error:
+                logging.error(f"Failed to send notification email: {str(error)}")
 
-                    poller = email_client.begin_send(email_message)
-                    email_result = poller.result()
-
-                except Exception as error:
-                    logging.error(f"Failed to send notification email: {str(error)}")
-
-            else:
-                log.debug(f"No Email Address in folder name {file_directory}")
 
 
 

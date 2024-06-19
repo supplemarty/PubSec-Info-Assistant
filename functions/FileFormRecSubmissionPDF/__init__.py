@@ -10,6 +10,9 @@ import requests
 from azure.storage.queue import QueueClient, TextBase64EncodePolicy
 from shared_code.status_log import State, StatusClassification, StatusLog
 from shared_code.utilities import Utilities
+from shared_code.email_notifications import EmailNotifications
+
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
 
 azure_blob_storage_account = os.environ["BLOB_STORAGE_ACCOUNT"]
 azure_blob_storage_endpoint = os.environ["BLOB_STORAGE_ACCOUNT_ENDPOINT"]
@@ -159,6 +162,7 @@ def main(msg: func.QueueMessage) -> None:
                     StatusClassification.ERROR,
                     State.ERROR,
                 )
+                email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - maximum submissions to FR reached")
 
         else:
             # general error occurred
@@ -168,6 +172,7 @@ def main(msg: func.QueueMessage) -> None:
                 StatusClassification.ERROR,
                 State.ERROR,
             )
+            email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - Error on PDF submission to FR - {response.status_code} - {response.reason}")
 
     except Exception as error:
         statusLog.upsert_document(
@@ -176,5 +181,6 @@ def main(msg: func.QueueMessage) -> None:
             StatusClassification.ERROR,
             State.ERROR,
         )
+        email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - An error occurred - {str(error)}")
         
     statusLog.save_document(blob_path)

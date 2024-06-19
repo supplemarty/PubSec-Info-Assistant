@@ -13,6 +13,9 @@ from shared_code.status_log import StatusLog, State, StatusClassification
 from shared_code.utilities import Utilities, MediaType
 
 import requests
+from shared_code.email_notifications import EmailNotifications
+
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
 
 azure_blob_storage_account = os.environ["BLOB_STORAGE_ACCOUNT"]
 azure_blob_storage_endpoint = os.environ["BLOB_STORAGE_ACCOUNT_ENDPOINT"]
@@ -106,6 +109,7 @@ def PartitionFile(file_extension: str, file_url: str):
             
     except Exception as e:
         raise UnstructuredError(f"An error occurred trying to parse the file: {str(e)}") from e
+    
          
     return elements, metadata
     
@@ -196,5 +200,6 @@ def main(msg: func.QueueMessage) -> None:
              
     except Exception as e:
         statusLog.upsert_document(blob_name, f"{function_name} - An error occurred - {str(e)}", StatusClassification.ERROR, State.ERROR)
+        email_notifications.send_error_email(blob_name, f"{function_name} - An error occurred - {str(e)}")
 
     statusLog.save_document(blob_name)

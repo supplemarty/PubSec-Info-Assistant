@@ -11,6 +11,9 @@ import re
 from shared_code.status_log import State, StatusClassification, StatusLog
 from shared_code.utilities import Utilities
 from tenacity import retry, stop_after_attempt, wait_fixed
+from shared_code.email_notifications import EmailNotifications
+
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
 
 azure_blob_storage_account = os.environ["BLOB_STORAGE_ACCOUNT"]
 azure_blob_storage_endpoint = os.environ["BLOB_STORAGE_ACCOUNT_ENDPOINT"]
@@ -236,6 +239,7 @@ def main(msg: func.QueueMessage) -> None:
             StatusClassification.ERROR,
             State.ERROR,
         )
+        email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - An error occurred - {str(error)}")
         
     statusLog.save_document(blob_path)
 
@@ -307,7 +311,7 @@ def requeue(response, message_json):
             f"{FUNCTION_NAME} - Error on language detection - {response.status_code} - {response.reason}",
             StatusClassification.ERROR
         )     
-        
+        email_notifications.send_error_email(blob_path, f"{FUNCTION_NAME} - Error on language detection - {response.status_code} - {response.reason}")
 
 @retry(stop=stop_after_attempt(5), wait=wait_fixed(1))
 def get_chunk_blob(blob_path_plus_sas):

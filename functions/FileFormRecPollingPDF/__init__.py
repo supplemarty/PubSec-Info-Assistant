@@ -15,6 +15,9 @@ from collections import namedtuple
 import time
 from requests.exceptions import RequestException
 from tenacity import retry, stop_after_attempt, wait_fixed
+from shared_code.email_notifications import EmailNotifications
+
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
 
 def string_to_bool(s):
     return s.lower() == 'true'
@@ -123,7 +126,8 @@ def main(msg: func.QueueMessage) -> None:
                     message_json_str = json.dumps(message_json)  
                     queue_client.send_message(message_json_str, visibility_timeout=backoff)
                 else:
-                    statusLog.upsert_document(blob_name, f'{function_name} - maximum submissions to FR reached', StatusClassification.ERROR, State.ERROR)     
+                    statusLog.upsert_document(blob_name, f'{function_name} - maximum submissions to FR reached', StatusClassification.ERROR, State.ERROR)
+                    email_notifications.send_error_email(blob_name, "FR Max Submissions Reached")
             else:
                 # unexpected status returned by FR, such as internal capacity overload, so requeue
                 if submit_queued_count < max_submit_requeue_count:
@@ -135,14 +139,18 @@ def main(msg: func.QueueMessage) -> None:
                     queue_client.send_message(message_string, visibility_timeout = submit_requeue_hide_seconds)  
                     statusLog.upsert_document(blob_name, f'{function_name} file resent to submit queue. Visible in {submit_requeue_hide_seconds} seconds', StatusClassification.DEBUG, State.THROTTLED)      
                 else:
-                    statusLog.upsert_document(blob_name, f'{function_name} - maximum submissions to FR reached', StatusClassification.ERROR, State.ERROR)     
+                    statusLog.upsert_document(blob_name, f'{function_name} - maximum submissions to FR reached', StatusClassification.ERROR, State.ERROR)
+                    email_notifications.send_error_email(blob_name, "FR Max Submissions Reached")
                 
         else:
-            statusLog.upsert_document(blob_name, f'{function_name} - Error raised by FR polling', StatusClassification.ERROR, State.ERROR)    
+            statusLog.upsert_document(blob_name, f'{function_name} - Error raised by FR polling', StatusClassification.ERROR, State.ERROR)
+            email_notifications.send_error_email(blob_name, "Error raised by FR polling")
                             
     except Exception as e:
         # a general error 
         statusLog.upsert_document(blob_name, f"{function_name} - An error occurred - code: {response.status_code} - {str(e)}", StatusClassification.ERROR, State.ERROR)
+        email_notifications.send_error_email(blob_name, f"{function_name} - An error occurred - code: {response.status_code} - {str(e)}")
+
         
     statusLog.save_document(blob_name)
 
