@@ -22,7 +22,7 @@ from approaches.chatreadretrieveread import ChatReadRetrieveReadApproach
 from approaches.chatwebretrieveread import ChatWebRetrieveRead
 from approaches.gpt_direct_approach import GPTDirectApproach
 from approaches.approach import Approaches
-from azure.core.credentials import AzureKeyCredential
+from azure.core.credentials import AzureKeyCredential, AzureNamedKeyCredential
 from azure.identity import DefaultAzureCredential, AzureAuthorityHosts
 from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 from azure.search.documents import SearchClient
@@ -32,6 +32,7 @@ from azure.storage.blob import (
     ResourceTypes,
     generate_account_sas,
 )
+from azure.data.tables import TableServiceClient
 from approaches.mathassistant import(
     generate_response,
     process_agent_scratch_pad,
@@ -163,6 +164,9 @@ blob_container = blob_client.get_container_client(ENV["AZURE_BLOB_STORAGE_CONTAI
 
 model_name = ''
 model_version = ''
+
+tsc_cred = AzureNamedKeyCredential(ENV["AZURE_BLOB_STORAGE_ACCOUNT"], ENV["AZURE_BLOB_STORAGE_KEY"])
+table_service_client = TableServiceClient(endpoint="https://infoasststorekorzd.table.core.windows.net/", credential=tsc_cred)
 
 # Set up OpenAI management client
 openai_mgmt_client = CognitiveServicesManagementClient(
@@ -302,7 +306,6 @@ async def chat(request: Request):
     json_body = await request.json()
     approach = json_body.get("approach")
     overrides = json_body.get("overrides", {})
-    overrides["selected_folders"] = getuserid(request)
     try:
         impl = chat_approaches.get(Approaches(int(approach)))
         if not impl:
@@ -374,8 +377,8 @@ async def get_all_upload_status(request: Request):
     json_body = await request.json()
     timeframe = json_body.get("timeframe")
     state = json_body.get("state")
-    folder = getuserid(request) #son_body.get("folder")
-    tag = json_body.get("tag")   
+    folder = json_body.get("folder")
+    tag = json_body.get("tag")
     try:
         results = statusLog.read_files_status_by_timeframe(timeframe, 
             State[state], 
@@ -406,6 +409,50 @@ async def get_all_upload_status(request: Request):
         log.exception("Exception in /getalluploadstatus")
         raise HTTPException(status_code=500, detail=str(ex)) from ex
     return results
+
+#table_client_user_folder_access
+
+def getUserFolderAccess(userid, canmanage):
+    folders = [{ "folder": userid, "canmanage": True, "default": True }]
+    tc = table_service_client.get_table_client("UserFolderAccess")
+    userfolders = tc.get_entity("user", userid)
+    if (userfolders):
+        folder_permission_json = userfolders["FolderPermissionJson"]
+        if (folder_permission_json):
+            assigned_folders = [{ "folder": f["folder"], "canmanage": f["canmanage"], "default": False } for f in json.loads(folder_permission_json)]
+            if (canmanage == True):
+                folders += [f for f in assigned_folders if f["canmanage"] == True]
+            else:
+                folders += assigned_folders
+            
+    return folders
+
+
+@app.post("/getfolders")
+@requires_auth
+async def get_folders(request: Request):
+    """
+    Get all folders.
+
+    Parameters:
+    - request: The HTTP request object.
+
+    Returns:
+    - results: list of unique folders.
+    """
+    try:
+        json_body = await request.json()
+        filter = json_body.get("filter")
+        userid = getuserid(request)
+        canmanage = (filter == "canmanage")
+
+        return getUserFolderAccess(userid, canmanage)
+    
+    except Exception as ex:
+        log.exception("Exception in /getfolders")
+        raise HTTPException(status_code=500, detail=str(ex)) from ex
+    
+
 
 # @app.post("/getfolders")
 # async def get_folders(request: Request):
@@ -522,7 +569,15 @@ async def get_tags(request: Request):
         database = cosmos_client.get_database_client(statusLog._database_name)               
         container = database.get_container_client(statusLog._container_name) 
         userid = getuserid(request)
-        query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags Where c.file_path LIKE 'upload/" + userid + "/%'"
+        userfolders = getUserFolderAccess(userid, False)
+        queryfilter = ""
+        for f in userfolders:
+            if (queryfilter == ""):
+                queryfilter = "Where"
+            else:
+                queryfilter += " Or"
+            queryfilter += " (c.file_path LIKE 'upload/" + f["folder"] + "/%')"
+        query_string = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags " + queryfilter
         #query_string = "SELECT c.file_path FROM c Where c.file_path LIKE 'upload/Marty/%'"
         items = list(container.query_items(
             query=query_string,

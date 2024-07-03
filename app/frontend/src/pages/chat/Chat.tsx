@@ -10,8 +10,8 @@ import { ITag } from '@fluentui/react/lib/Pickers';
 import styles from "./Chat.module.css";
 import rlbgstyles from "../../components/ResponseLengthButtonGroup/ResponseLengthButtonGroup.module.css";
 import rtbgstyles from "../../components/ResponseTempButtonGroup/ResponseTempButtonGroup.module.css";
-
-import { chatApi, Approaches, ChatResponse, ChatRequest, ChatTurn, ChatMode, getFeatureFlags, GetFeatureFlagsResponse } from "../../api";
+import { Dropdown, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
+import { chatApi, Approaches, ChatResponse, ChatRequest, ChatTurn, ChatMode, getFeatureFlags, GetFeatureFlagsResponse, getFolders } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 // import { ExampleList } from "../../components/Example";
@@ -28,6 +28,8 @@ import { ChatModeButtonGroup } from "../../components/ChatModeButtonGroup";
 import { TagPickerInline } from "../../components/TagPicker";
 // import React from "react";
 import DivCore_DkGray from "../../assets/DivCore_DkGray.png";
+
+const dropdownFolderStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 
 const Chat = () => {
 
@@ -98,6 +100,9 @@ const Chat = () => {
     // const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
     const [selectedTags, setSelectedTags] = useState<ITag[]>([]);
 
+    const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
+    const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);    
+
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
 
     interface IAnswer {user: string, response: ChatResponse};
@@ -117,6 +122,33 @@ const Chat = () => {
             console.log(error);
         }
     }
+
+    const onFolderChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
+        setSelectedFolderItem(item);
+    };    
+
+    const fetchFolders = async () => {
+        try {
+            const folders = await getFolders(""); // Await the promise
+            let folderDropdownOptions: IDropdownOption[] = [];
+            let selectedFolder: IDropdownOption | undefined = undefined;
+            folders.forEach((folder) => {
+                let opt : IDropdownOption = { key: folder.folder, text: folder.folder };
+                if (folder.default == true) {
+                    opt.key = "*";
+                    selectedFolder = opt;
+                }
+                folderDropdownOptions.push(opt);
+            });
+            // ({ key: folder.default == true ? "*" : folder.folder, text: folder.folder }));
+            setFolderOptions(folderDropdownOptions);
+            setSelectedFolderItem(selectedFolder);
+        }
+        catch (e) {
+            console.log(e);
+        }
+    };
+
 
     const makeApiRequest = async (question: string, approach: Approaches, 
                                 work_citation_lookup: { [key: string]: { citation: string; source_path: string; page_number: string } },
@@ -152,7 +184,7 @@ const Chat = () => {
                     aiPersona: "",
                     responseLength: responseLengthByChatMode[activeChatMode],
                     responseTemp: responseTempByChatMode[activeChatMode],
-                    // selectedFolders: selectedFolders.includes("selectAll") ? "All" : selectedFolders.length == 0 ? "All" : selectedFolders.join(","),
+                    selectedFolders: SelectedFolderItem?.text,
                     selectedTags: selectedTags.map(tag => tag.name).join(",")
                 },
                 citation_lookup: approach == Approaches.CompareWebWithWork ? web_citation_lookup : approach == Approaches.CompareWorkWithWeb ? work_citation_lookup : {},
@@ -290,7 +322,10 @@ const Chat = () => {
     //     defaultApproach == Approaches.ReadRetrieveRead ? setDefaultApproach(Approaches.ChatWebRetrieveRead) : setDefaultApproach(Approaches.ReadRetrieveRead);
     // }
 
-    useEffect(() => {fetchFeatureFlags()}, []);
+    useEffect(() => {
+        fetchFeatureFlags();
+        fetchFolders();
+    }, []);
     useEffect(() => chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" }), [isLoading]);
 
     // const onRetrieveCountChange = (_ev?: React.SyntheticEvent<HTMLElement, Event>, newValue?: string) => {
@@ -533,10 +568,19 @@ const Chat = () => {
                     <TextField className={styles.chatSettingsSeparator} defaultValue={systemPersona} label="System Persona" onChange={onSystemPersonaChange} /> */}
                     <ResponseLengthButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseLengthChange} defaultValue={responseLengthByChatMode[activeChatMode]} />
                     <ResponseTempButtonGroup className={styles.chatSettingsSeparator} onClick={onResponseTempChange} defaultValue={responseTempByChatMode[activeChatMode]} />
-                    {activeChatMode != ChatMode.Ungrounded &&
+                    {activeChatMode == ChatMode.WorkOnly &&
                         <div>
                             <Separator className={styles.chatSettingsSeparator}>Filter Search Results by</Separator>
-                            {/* <FolderPicker allowFolderCreation={false} onSelectedKeyChange={onSelectedKeyChanged} preSelectedKeys={selectedFolders} /> */}
+                            <Dropdown
+                                label="Folder:"
+                                defaultSelectedKey={'*'}
+                                onChange={onFolderChange}
+                                placeholder="Select folder"
+                                options={folderOptions}
+                                styles={dropdownFolderStyles}
+                                aria-label="folder options for file upload"
+                            /> 
+                            
                             <TagPickerInline allowNewTags={false} onSelectedTagsChange={onSelectedTagsChange} preSelectedTags={selectedTags} />
                         </div>
                     }

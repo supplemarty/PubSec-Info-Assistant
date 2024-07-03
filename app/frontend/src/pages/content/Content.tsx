@@ -2,8 +2,8 @@
 // Licensed under the MIT license.
 
 import { useState, useEffect } from 'react';
-import { Pivot,
-    PivotItem } from "@fluentui/react";
+import { Pivot, PivotItem } from "@fluentui/react";
+import { Dropdown, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
 import { ITag } from '@fluentui/react/lib/Pickers';
 import { FilePicker } from "../../components/filepicker/file-picker";
 import { FileStatus } from "../../components/FileStatus/FileStatus";
@@ -11,15 +11,22 @@ import { TagPickerInline } from "../../components/TagPicker/TagPicker"
 // import { FolderPicker } from '../../components/FolderPicker/FolderPicker';
 import { SparkleFilled, DocumentPdfFilled, DocumentDataFilled, GlobePersonFilled, MailFilled, StoreMicrosoftFilled } from "@fluentui/react-icons";
 import styles from "./Content.module.css";
-import { IdentityManager } from "../../identity";
+//import { IdentityManager } from "../../identity";
+import { getFolders } from "../../api";
+
 export interface IButtonExampleProps {
     disabled?: boolean;
     checked?: boolean;
   }
+  
+  const dropdownFolderStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 
 const Content = () => {
-    const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined);
+    //const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined);
     const [selectedTags, setSelectedTags] = useState<string[] | undefined>(undefined);
+    const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
+    const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);    
+
     // const [selectedApproach, setSelectedApproach] = useState<number | undefined>(undefined);
 
     // const onSelectedKeyChanged = (selectedFolder: string[]) => {
@@ -30,6 +37,10 @@ const Content = () => {
         setSelectedTags(selectedTags.map((tag) => tag.name));
     }
 
+    const onFolderChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
+        setSelectedFolderItem(item);
+    };    
+
     // const onSelectedApproach = (approach: number) => {
     //     setSelectedApproach(approach);
     //     alert(approach)
@@ -38,12 +49,35 @@ const Content = () => {
     // const handleLinkClick = (item?: PivotItem) => {
     //     setSelectedKey(undefined);
     // };   
+
+    const fetchFolders = async () => {
+        try {
+            const folders = await getFolders("canmanage"); // Await the promise
+            let folderDropdownOptions: IDropdownOption[] = [];
+            let selectedFolder: IDropdownOption | undefined = undefined;
+            folders.forEach((folder) => {
+                let opt : IDropdownOption = { key: folder.folder, text: folder.folder };
+                if (folder.default == true) {
+                    opt.key = "*";
+                    selectedFolder = opt;
+                }
+                folderDropdownOptions.push(opt);
+            });
+            // ({ key: folder.default == true ? "*" : folder.folder, text: folder.folder }));
+            setFolderOptions(folderDropdownOptions);
+            setSelectedFolderItem(selectedFolder);
+        }
+        catch (e) {
+            console.log(e);
+        }
+    };
     
     
     useEffect(() => {
-        IdentityManager.GetCurrentUser(true).then((u) => {
-            setSelectedKey(u.UserId);
-        });
+        // IdentityManager.GetCurrentUser(true).then((u) => {
+        //     setSelectedKey(u.UserId);
+        // });
+        fetchFolders();
     },[]);
 
     return (
@@ -92,9 +126,19 @@ const Content = () => {
                             </span>
                         </div>
                         <div className={styles.EmptyObjectivesListItem}>
-                            {/* <FolderPicker allowFolderCreation={true} onSelectedKeyChange={onSelectedKeyChanged}/> */}
+
+                            <Dropdown
+                                label="Folder:"
+                                defaultSelectedKey={'*'}
+                                onChange={onFolderChange}
+                                placeholder="Select folder"
+                                options={folderOptions}
+                                styles={dropdownFolderStyles}
+                                aria-label="folder options for file upload"
+                            /> 
+                            
                             <TagPickerInline allowNewTags={true} onSelectedTagsChange={onSelectedTagsChanged}/>
-                            <FilePicker folderPath={selectedKey || ""} tags={selectedTags || []}/>
+                            <FilePicker folderPath={SelectedFolderItem?.text || ""} tags={selectedTags || []}/>
                         </div>
                     </div>
                 </PivotItem>

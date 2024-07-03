@@ -17,7 +17,8 @@ import { ChatResponse,
     ResubmitItemRequest,
     GetFeatureFlagsResponse,
     getMaxCSVFileSizeType,
-    GetAppIdentityResponse
+    GetAppIdentityResponse,
+    ContentFolder
     } from "./models";
 
 
@@ -117,7 +118,7 @@ export async function getAllUploadStatus(options: GetUploadStatusRequest): Promi
         body: JSON.stringify({
             timeframe: options.timeframe,
             state: options.state as string,
-            // folder: options.folder as string,
+            folder: options.folder as string,
             tag: options.tag as string
             })
         });
@@ -180,28 +181,25 @@ export async function resubmitItem(options: ResubmitItemRequest): Promise<boolea
 }
 
 
-// export async function getFolders(): Promise<string[]> {
-//     const response = await fetch("/getfolders", {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/json"
-//         },
-//         body: JSON.stringify({
-//             })
-//         });
+export async function getFolders(filter: string): Promise<ContentFolder[]> {
+    const response = await fetch("/getfolders", {
+        method: "POST",
+        headers: await httpHeaders(),
+        body: JSON.stringify({filter})
+        });
     
-//     const parsedResponse: any = await response.json();
-//     if (response.status > 299 || !response.ok) {
-//         throw Error(parsedResponse.error || "Unknown error");
-//     }
-//     // Assuming parsedResponse is the array of strings (folder names) we want
-//     // Check if it's actually an array and contains strings
-//     if (Array.isArray(parsedResponse) && parsedResponse.every(item => typeof item === 'string')) {
-//         return parsedResponse;
-//     } else {
-//         throw new Error("Invalid response format");
-//     }
-// }
+    const parsedResponse: ContentFolder[] = await response.json();
+    if (response.status > 299 || !response.ok) {
+        throw Error("Unknown error");
+    }
+    // Assuming parsedResponse is the array of strings (folder names) we want
+    // Check if it's actually an array and contains strings
+    //if (Array.isArray(parsedResponse) && parsedResponse.every(item => typeof item === 'string')) {
+        return parsedResponse;
+    //} else {
+      //  throw new Error("Invalid response format");
+    //}
+}
 
 
 export async function getTags(): Promise<string[]> {

@@ -17,6 +17,12 @@ export const enum Approaches {
     CompareWebWithWork = 6
 }
 
+export type ContentFolder = {
+    folder: string;
+    canmanage: boolean;
+    default: boolean;
+}
+
 export type ChatRequestOverrides = {
     semanticRanker?: boolean;
     semanticCaptions?: boolean;
@@ -33,7 +39,7 @@ export type ChatRequestOverrides = {
     aiPersona?: string;
     responseLength?: number;
     responseTemp?: number;
-    // selectedFolders?: string;
+    selectedFolders?: string;
     selectedTags?: string;
 };
 
@@ -102,7 +108,7 @@ export type AllFolders = {
 export type GetUploadStatusRequest = {
     timeframe: number;
     state: FileState;
-    // folder: string;
+    folder: string;
     tag: string
 }
 
