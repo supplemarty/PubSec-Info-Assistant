@@ -22,13 +22,14 @@ from fastapi.responses import RedirectResponse
 from fastapi_utils.tasks import repeat_every
 from model_handling import load_models
 import openai
-from tenacity import retry, wait_random_exponential, stop_after_attempt
+from tenacity import retry, wait_random_exponential, stop_after_attempt, wait_fixed
 from sentence_transformers import SentenceTransformer
 from shared_code.utilities_helper import UtilitiesHelper
 from shared_code.status_log import State, StatusClassification, StatusLog
 from shared_code.email_notifications import EmailNotifications
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
+from azure.data.tables import TableClient
 
 # === ENV Setup ===
 
@@ -49,8 +50,11 @@ ENV = {
     "EMBEDDING_REQUEUE_BACKOFF": 60,
     "AZURE_OPENAI_SERVICE": None,
     "AZURE_OPENAI_SERVICE_KEY": None,
+    "AZURE_OPENAI_SERVICE_KEY_2": None,
     "AZURE_OPENAI_ENDPOINT": None,
+    "AZURE_OPENAI_ENDPOINT_2": None,
     "AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME": None,
+    "AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME_2": None,
     "AZURE_SEARCH_INDEX": None,
     "AZURE_SEARCH_SERVICE_KEY": None,
     "AZURE_SEARCH_SERVICE": None,
@@ -73,26 +77,48 @@ for key, value in ENV.items():
     
 search_creds = AzureKeyCredential(ENV["AZURE_SEARCH_SERVICE_KEY"])
     
-openai.api_base = ENV["AZURE_OPENAI_ENDPOINT"]
-openai.api_type = "azure"
-openai.api_key = ENV["AZURE_OPENAI_SERVICE_KEY"]
-openai.api_version = "2023-12-01-preview"
+# openai.api_base = ENV["AZURE_OPENAI_ENDPOINT"]
+# openai.api_type = "azure"
+# openai.api_key = ENV["AZURE_OPENAI_SERVICE_KEY"]
+# openai.api_version = "2023-12-01-preview"
 
-email_notifications = EmailNotifications(ENV["EMAIL_CONNECTION_STRING"], ENV["NOTIFICATION_EMAIL_SENDER"], ENV["ERROR_EMAIL_RECIPS_CSV"])
+tc_folders = TableClient.from_connection_string(ENV["BLOB_CONNECTION_STRING"], "Folders")
+email_notifications = EmailNotifications(ENV["EMAIL_CONNECTION_STRING"], ENV["NOTIFICATION_EMAIL_SENDER"], ENV["ERROR_EMAIL_RECIPS_CSV"], tc_folders)
 
 class AzOAIEmbedding(object):
     """A wrapper for a Azure OpenAI Embedding model"""
-    def __init__(self, deployment_name) -> None:
+    def __init__(self, deployment_name, api_base, api_key, bulk_use) -> None:
         self.deployment_name = deployment_name
+        self.api_base = api_base
+        self.api_key = api_key
+        self.bulk_use = bulk_use
+
+    @retry(wait=wait_fixed(5), stop=stop_after_attempt(15))
+    def encode_bulk(self, texts):
+        return self.encode_internal(texts)
     
     @retry(wait=wait_random_exponential(multiplier=1, max=10), stop=stop_after_attempt(5))
-    def encode(self, texts):
+    def encode_interactive(self, texts):
+        return self.encode_internal(texts)
+    
+    def encode_internal(self, texts):
         """Embeds a list of texts using a given model"""
         response = openai.Embedding.create(
             engine=self.deployment_name,
-            input=texts
+            input=texts,
+            api_base = self.api_base,
+            api_type = "azure",
+            api_key = self.api_key,
+            api_version = "2023-12-01-preview"
         )
         return response
+
+    @retry(wait=wait_random_exponential(multiplier=1, max=10), stop=stop_after_attempt(5))
+    def encode(self, texts):
+        if (self.bulk_use):
+            return self.encode_bulk(texts)
+        else:
+            return self.encode_interactive(texts)
 
 class STModel(object):
     """A wrapper for a sentence-transformers model"""
@@ -133,10 +159,23 @@ models, model_info = load_models()
 
 # Add Azure OpenAI Embedding & additional Model
 models["azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"]] = AzOAIEmbedding(
-    ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"])
+    ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"],
+    ENV["AZURE_OPENAI_ENDPOINT"],
+    ENV["AZURE_OPENAI_SERVICE_KEY"], False)
+
+models["azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME_2"]] = AzOAIEmbedding(
+    ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME_2"],
+    ENV["AZURE_OPENAI_ENDPOINT_2"],
+    ENV["AZURE_OPENAI_SERVICE_KEY_2"], True)
 
 model_info["azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"]] = {
     "model": "azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME"],
+    "vector_size": 1536,
+    # Source: https://platform.openai.com/docs/guides/embeddings/what-are-embeddings
+}
+
+model_info["azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME_2"]] = {
+    "model": "azure-openai_" + ENV["AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME_2"],
     "vector_size": 1536,
     # Source: https://platform.openai.com/docs/guides/embeddings/what-are-embeddings
 }

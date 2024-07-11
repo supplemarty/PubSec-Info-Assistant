@@ -32,7 +32,7 @@ from azure.storage.blob import (
     ResourceTypes,
     generate_account_sas,
 )
-from azure.data.tables import TableServiceClient
+from azure.data.tables import TableClient
 from approaches.mathassistant import(
     generate_response,
     process_agent_scratch_pad,
@@ -106,7 +106,8 @@ ENV = {
     "ENABLE_MULTIMEDIA": "false",
     "MAX_CSV_FILE_SIZE": "7",
     "AZURE_TENANT_ID": "",
-    "AZURE_WEBAPP_CLIENT_ID": ""
+    "AZURE_WEBAPP_CLIENT_ID": "",
+    "BLOB_CONNECTION_STRING": None
     }
 
 for key, value in ENV.items():
@@ -165,8 +166,7 @@ blob_container = blob_client.get_container_client(ENV["AZURE_BLOB_STORAGE_CONTAI
 model_name = ''
 model_version = ''
 
-tsc_cred = AzureNamedKeyCredential(ENV["AZURE_BLOB_STORAGE_ACCOUNT"], ENV["AZURE_BLOB_STORAGE_KEY"])
-table_service_client = TableServiceClient(endpoint="https://infoasststorekorzd.table.core.windows.net/", credential=tsc_cred)
+tc_user_access = TableClient.from_connection_string(ENV["BLOB_CONNECTION_STRING"], "UserFolderAccess")
 
 # Set up OpenAI management client
 openai_mgmt_client = CognitiveServicesManagementClient(
@@ -414,8 +414,7 @@ async def get_all_upload_status(request: Request):
 
 def getUserFolderAccess(userid, canmanage):
     folders = [{ "folder": userid, "canmanage": True, "default": True }]
-    tc = table_service_client.get_table_client("UserFolderAccess")
-    userfolders = tc.get_entity("user", userid)
+    userfolders = tc_user_access.get_entity("user", userid)
     if (userfolders):
         folder_permission_json = userfolders["FolderPermissionJson"]
         if (folder_permission_json):

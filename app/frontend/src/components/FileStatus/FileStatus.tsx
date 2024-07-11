@@ -186,7 +186,8 @@ export const FileStatus = ({ className }: Props) => {
         "pdf": 'pdf',
         "pptx": 'pptx',
         "txt": 'txt',
-        "html": 'xsn'
+        "html": 'xsn',
+        'xlsx': 'xlsx'
     };
 
     const animatedStyles = useSpring({

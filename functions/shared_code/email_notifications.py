@@ -1,14 +1,20 @@
 from azure.communication.email import EmailClient
+import re
+import json
+
+# Regular expression for validating an Email
+regex_email = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
 
 class EmailNotifications:
     """ Class for logging status of various processes to Cosmos DB"""
 
-    def __init__(self, email_connection_string, sender_email_address, error_recips_csv):
+    def __init__(self, email_connection_string, sender_email_address, error_recips_csv, _table_folder_client):
         """ Constructor function """
         self._email_connection_string = email_connection_string
         self._sender_email_address = sender_email_address
         self._email_client = EmailClient.from_connection_string(email_connection_string)
         self._error_to = [{"address": to_email } for to_email in error_recips_csv.split(",")]
+        self._table_folder_client = _table_folder_client
 
     def internal_send_email(self, email_message):
         poller = self._email_client.begin_send(email_message)
@@ -33,16 +39,32 @@ class EmailNotifications:
                 </html>"
         
         return html
+    
+    def recips_from_foldername(self, folder):
+
+        if (re.fullmatch(regex_email, folder)):
+            return [{"address": folder }]
+        else:
+            # Get email recips from folder information in storage
+            folder_entity = self._table_folder_client.get_entity("folder", folder)
+            if (folder_entity):
+                email_json = folder_entity["EmailRecipientsJson"]
+                if (email_json):
+                    return [{"address": e } for e in json.loads(email_json)]
+        
+        return []
+
+
 
     def send_error_email(self, blob_path, error_msg):
 
-        user_email, doc_name = self.parse_blob_name(blob_path)
+        folder, doc_name = self.parse_blob_name(blob_path)
 
         email_message = {
             "senderAddress": self._sender_email_address,
             "recipients":  {
                 "to": self._error_to,
-                "cc": [{"address": user_email }]
+                "cc": self.recips_from_foldername(folder)
             },
             "content": {
                 "subject": "AI Document Processing Error",
@@ -55,12 +77,12 @@ class EmailNotifications:
 
     def send_email(self, blob_path, subject, msg):
 
-        user_email, doc_name = self.parse_blob_name(blob_path)
+        folder, doc_name = self.parse_blob_name(blob_path)
 
         email_message = {
             "senderAddress": self._sender_email_address,
             "recipients":  {
-                "to": [{"address": user_email }]
+                "to": self.recips_from_foldername(folder)
             },
             "content": {
                 "subject": subject,

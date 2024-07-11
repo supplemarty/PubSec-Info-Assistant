@@ -1,85 +1,47 @@
-from azure.communication.email import EmailClient
+import os
+import openai
+from rich.console import Console
+from tenacity import retry, wait_random_exponential, stop_after_attempt, wait_fixed
+
+# openai.api_base = "https://Divco-OpenAI-02-US2.openai.azure.com/"
+# openai.api_type = "azure"
+# openai.api_key = "0684bcacf16b43749091850d28adab36"
+# openai.api_version = "2023-12-01-preview"
 
 
-class EmailNotifications:
-    """ Class for logging status of various processes to Cosmos DB"""
+#@retry(wait=wait_fixed(5), stop=stop_after_attempt(15))
+def encode1(texts):
+    """Embeds a list of texts using a given model"""
+    response = openai.Embedding.create(
+        engine="BI_ADA2",
+        input=texts,
+        api_base = "https://Divco-OpenAI-02-US2.openai.azure.com/",
+        api_type = "azure",
+        api_key = "0684bcacf16b43749091850d28adab36",
+        api_version = "2023-12-01-preview"
+    )
+    return response
+    
+def encode2(texts):
+    """Embeds a list of texts using a given model"""
+    response = openai.Embedding.create(
+        engine="BI_ADA",
+        input=texts,
+        api_base = "https://divco-openai-01.openai.azure.com/",
+        api_type = "azure",
+        api_key = "4a75db55c6c3445684d38d3e76287caf",
+        api_version = "2023-12-01-preview"
+    )
+    return response
 
-    def __init__(self, email_connection_string, sender_email_address, error_recips_csv):
-        """ Constructor function """
-        self._email_connection_string = email_connection_string
-        self._sender_email_address = sender_email_address
-        self._email_client = EmailClient.from_connection_string(email_connection_string)
-        self._error_to = [{"address": to_email } for to_email in error_recips_csv.split(",")]
+    
 
-    def internal_send_email(self, email_message):
-        poller = self._email_client.begin_send(email_message)
-        email_result = poller.result()
-        return email_result
+long_string = "Hi"
 
-    def gen_body_html(self, doc_name, msg, is_error):
+for i in range(2):
+    e = encode1(long_string)
+    print(i)
+    print(e)
+    e = encode2(long_string)
+    print(e)
 
-        msg_style = "color: red;" if is_error else ""
-
-        html = f"<html> \
-                    <head><title>Azure AI</title></head> \
-                    <body> \
-                        <div style='background-color: rgb(168, 166, 161); color: #f2f2f2; padding: 10px;'> \
-                            <table><tr><td><img style='height: 20px;' src='https://coreapps.divcowest.com/notification/images/divcore_logo_white.png' alt='Azure OpenAI'><td class='headerTitle'>Azure AI</td></tr></table> \
-                        </div> \
-                        <div style='padding: 10px;'> \
-                            <b>Document: {doc_name}<br/></b> \
-                            <i style='{msg_style}'>{msg}</i> \
-                        </div> \
-                    </body> \
-                </html>"
-        
-        
-        return html
-
-    def send_error_email(self, blob_path, error_msg):
-
-        user_email, doc_name = self.parse_blob_name(blob_path)
-
-        email_message = {
-            "senderAddress": self._sender_email_address,
-            "recipients":  {
-                "to": self._error_to,
-                "cc": [{"address": user_email }]
-            },
-            "content": {
-                "subject": "AI Document Processing Error",
-                "html": self.gen_body_html(doc_name, error_msg, True)
-            }
-        }
-
-        
-        return self.internal_send_email(email_message)
-
-
-    def send_email(self, blob_path, subject, msg):
-
-        user_email, doc_name = self.parse_blob_name(blob_path)
-
-        email_message = {
-            "senderAddress": self._sender_email_address,
-            "recipients":  {
-                "to": [{"address": user_email }]
-            },
-            "content": {
-                "subject": subject,
-                "html": self.gen_body_html(doc_name, msg, False)
-            }
-        }
-        
-        return self.internal_send_email(email_message)
-
-
-    def parse_blob_name(self, blob_path):
-        segments = blob_path.split("/")
-        idx = 1 if blob_path[0] == "/" else 0
-        return segments[idx], segments[idx + 1]
-
-connection_string = "endpoint=https://infoasst-divcoai-azure-communication.unitedstates.communication.azure.com/;accesskey=O90+GyWM9jUvPUGhxgrbYb0PKdAKzB1j3uYhUDwwlLfesjLMfKdnvtrt9PaN56CmnaguxxLAvC7W85kdJWS9bA=="
-ec = EmailNotifications(connection_string, "donotreply@notify.divcore.com", "msupple@divcowest.com")
-blob_name = "MSupple@divcowest.com/LoanCore Portfolio Email.pdf"
-ec.send_error_email(blob_name, "it broke!")
