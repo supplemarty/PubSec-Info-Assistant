@@ -379,7 +379,15 @@ async def get_all_upload_status(request: Request):
     state = json_body.get("state")
     folder = json_body.get("folder")
     tag = json_body.get("tag")
+    
     try:
+
+        if not folder:
+            folder = "*"
+        
+        if (folder == "*"):
+            folder = getuserid(request)
+
         results = statusLog.read_files_status_by_timeframe(timeframe, 
             State[state], 
             folder, 
@@ -414,11 +422,12 @@ async def get_all_upload_status(request: Request):
 
 def getUserFolderAccess(userid, canmanage):
     folders = [{ "folder": userid, "canmanage": True, "default": True }]
-    userfolders = tc_user_access.get_entity("user", userid)
-    if (userfolders):
-        folder_permission_json = userfolders["FolderPermissionJson"]
-        if (folder_permission_json):
-            assigned_folders = [{ "folder": f["folder"], "canmanage": f["canmanage"], "default": False } for f in json.loads(folder_permission_json)]
+    userfoldersquery = tc_user_access.query_entities(f"PartitionKey eq 'user' and RowKey eq '{userid}'")
+    userfolderres = [a for a in userfoldersquery]
+    if (len(userfolderres) == 1):
+        userfolders = userfolderres[0]
+        if ("FolderPermissionJson" in userfolders):
+            assigned_folders = [{ "folder": f["folder"], "canmanage": f["canmanage"], "default": False } for f in json.loads(userfolders["FolderPermissionJson"])]
             if (canmanage == True):
                 folders += [f for f in assigned_folders if f["canmanage"] == True]
             else:

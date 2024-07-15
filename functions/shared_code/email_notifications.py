@@ -46,11 +46,14 @@ class EmailNotifications:
             return [{"address": folder }]
         else:
             # Get email recips from folder information in storage
-            folder_entity = self._table_folder_client.get_entity("folder", folder)
-            if (folder_entity):
-                email_json = folder_entity["EmailRecipientsJson"]
-                if (email_json):
-                    return [{"address": e } for e in json.loads(email_json)]
+            folderentityquery = self._table_folder_client.query_entities(f"PartitionKey eq 'folder' and RowKey eq '{folder}'")
+            folderres = [a for a in folderentityquery]
+
+            #folder_entity = self._table_folder_client.get_entity("folder", folder)
+            if (len(folderres) == 1):
+                folder_entity = folderres[0]
+                if ("EmailRecipientsJson" in folder_entity):
+                    return [{"address": e } for e in json.loads(folder_entity["EmailRecipientsJson"])]
         
         return []
 
