@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import { useRef, useState, useEffect } from "react";
-import { Panel, DefaultButton, Separator, Label } from "@fluentui/react";
+import { Panel, DefaultButton, Separator, Label, PanelType, IGroup } from "@fluentui/react";
 import Switch from 'react-switch';
 import { GlobeFilled, BuildingMultipleFilled, AddFilled, ChatSparkleFilled } from "@fluentui/react-icons";
 import { ITag } from '@fluentui/react/lib/Pickers';
@@ -11,7 +11,7 @@ import styles from "./Chat.module.css";
 import rlbgstyles from "../../components/ResponseLengthButtonGroup/ResponseLengthButtonGroup.module.css";
 import rtbgstyles from "../../components/ResponseTempButtonGroup/ResponseTempButtonGroup.module.css";
 import { Dropdown, IDropdownOption, IDropdownStyles } from '@fluentui/react/lib/Dropdown';
-import { chatApi, Approaches, ChatResponse, ChatRequest, ChatTurn, ChatMode, getFeatureFlags, GetFeatureFlagsResponse, getFolders } from "../../api";
+import { chatApi, Approaches, ChatResponse, ChatRequest, ChatTurn, ChatMode, getFeatureFlags, GetFeatureFlagsResponse, getCompleteFiles, FILE_ICONS } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 // import { ExampleList } from "../../components/Example";
@@ -29,10 +29,12 @@ import { TagPickerInline } from "../../components/TagPicker";
 // import React from "react";
 import DivCore_DkGray from "../../assets/DivCore_DkGray.png";
 
+import { DocumentsDetailList, IDocument } from "../../components/FolderFilePicker/FolderFilePicker";
+
+
 const dropdownFolderStyles: Partial<IDropdownStyles> = { dropdown: { width: 200 } };
 
 const Chat = () => {
-
 
     const defaultChatMode : ChatMode = ChatMode.WorkOnly;
     // interface IResponseTempByChatMode {
@@ -91,6 +93,7 @@ const Chat = () => {
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [gettingFilterFiles, setGettingFilterFiles] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
 
     const [activeCitation, setActiveCitation] = useState<string>();
@@ -100,10 +103,16 @@ const Chat = () => {
     // const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
     const [selectedTags, setSelectedTags] = useState<ITag[]>([]);
 
-    const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
-    const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);    
+    const selectedFileKeysChat = useRef<string[]>([]);
+    const onSelectedFileKeysChange = async (keys: string[]) => { selectedFileKeysChat.current = keys;  }
+
+    //const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
+    //const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);    
 
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
+
+    const [filterFileItems, setFilterFileItems] = useState<IDocument[]>([]);
+    const [filterFileGroups, setFilterFileGroups] = useState<IGroup[]>([]);
 
     interface IAnswer {user: string, response: ChatResponse};
 
@@ -123,31 +132,70 @@ const Chat = () => {
         }
     }
 
-    const onFolderChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
-        setSelectedFolderItem(item);
-    };    
+    // const onFolderChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
+    //     setSelectedFolderItem(item);
+    // };    
 
-    const fetchFolders = async () => {
+    const fetchCompleteFiles = async () => {
+        setGettingFilterFiles(true);
         try {
-            const folders = await getFolders(""); // Await the promise
-            let folderDropdownOptions: IDropdownOption[] = [];
-            let selectedFolder: IDropdownOption | undefined = undefined;
+            const folders = await getCompleteFiles(); // Await the promise
+            // let folderDropdownOptions: IDropdownOption[] = [];
+            // let selectedFolder: IDropdownOption | undefined = undefined;
+            //items={ [ { key: "dude", name: "dude.docx", fileType: "docx", iconName: "test" }, { key: "dude2", name: "dude2.docx", fileType: "docx", iconName: "test" } ] }
+            //groups={ [ { key: 'group1', name: 'msupple@divcowest.com', startIndex: 0, count: 1, level: 0 }, { key: 'group2', name: 'Investor Relations', startIndex: 1, count: 1, level: 0 } ] }
+            var fileGroups: IGroup[] = [];
+            var fileItems: IDocument[] = [];
+
+            var itemIndex = 0;
             folders.forEach((folder) => {
-                let opt : IDropdownOption = { key: folder.folder, text: folder.folder };
-                if (folder.default == true) {
-                    opt.key = "*";
-                    selectedFolder = opt;
-                }
-                folderDropdownOptions.push(opt);
+                fileGroups.push({ key: folder.folder, name: folder.folder, startIndex: itemIndex, count: folder.items.length, level: 0 });
+
+                folder.items.forEach((item) => {
+                    let fileExtension = item.file_name.split('.').pop();
+                    fileExtension = fileExtension == undefined ? 'Folder' : fileExtension.toUpperCase()
+                    fileItems.push({key: item.file_path, name: item.file_name, iconName: FILE_ICONS[fileExtension.toLowerCase()], fileType: fileExtension})
+                });
+                itemIndex += folder.items.length;
+    
             });
-            // ({ key: folder.default == true ? "*" : folder.folder, text: folder.folder }));
-            setFolderOptions(folderDropdownOptions);
-            setSelectedFolderItem(selectedFolder);
+            selectedFileKeysChat.current = []; //reset selection
+            setFilterFileGroups(fileGroups);
+            setFilterFileItems(fileItems);
+            //setSelectedFileNamesCSV("");
+            // // ({ key: folder.default == true ? "*" : folder.folder, text: folder.folder }));
+            // setFolderOptions(folderDropdownOptions);
+            // setSelectedFolderItem(selectedFolder);
         }
         catch (e) {
             console.log(e);
         }
-    };
+        finally {
+            setGettingFilterFiles(false);
+        }
+    }
+    
+    // const fetchFolders = async () => {
+    //     try {
+    //         const folders = await getFolders(""); // Await the promise
+    //         let folderDropdownOptions: IDropdownOption[] = [];
+    //         let selectedFolder: IDropdownOption | undefined = undefined;
+    //         folders.forEach((folder) => {
+    //             let opt : IDropdownOption = { key: folder.folder, text: folder.folder };
+    //             if (folder.default == true) {
+    //                 opt.key = "*";
+    //                 selectedFolder = opt;
+    //             }
+    //             folderDropdownOptions.push(opt);
+    //         });
+    //         // ({ key: folder.default == true ? "*" : folder.folder, text: folder.folder }));
+    //         setFolderOptions(folderDropdownOptions);
+    //         setSelectedFolderItem(selectedFolder);
+    //     }
+    //     catch (e) {
+    //         console.log(e);
+    //     }
+    // };
 
 
     const makeApiRequest = async (question: string, approach: Approaches, 
@@ -184,8 +232,9 @@ const Chat = () => {
                     aiPersona: "",
                     responseLength: responseLengthByChatMode[activeChatMode],
                     responseTemp: responseTempByChatMode[activeChatMode],
-                    selectedFolders: SelectedFolderItem?.text,
-                    selectedTags: selectedTags.map(tag => tag.name).join(",")
+                    //selectedFolders: SelectedFolderItem?.text,
+                    selectedTags: selectedTags.map(tag => tag.name).join(","),
+                    selectedFiles: selectedFileKeysChat.current.length == 0 ? "" : selectedFileKeysChat.current.join(",")
                 },
                 citation_lookup: approach == Approaches.CompareWebWithWork ? web_citation_lookup : approach == Approaches.CompareWorkWithWeb ? work_citation_lookup : {},
                 thought_chain: thought_chain
@@ -256,6 +305,14 @@ const Chat = () => {
         setResponseLengthByChatMode(nv)
     };
 
+    // const onFilterFilesSelected = (selectedIndices: number[]) => {
+    //     var filePathsCSV = "";
+    //     selectedIndices.forEach((i) => {
+    //         filePathsCSV += (filePathsCSV.length == 0 ? "" : ",") + filterFileItems[i].key;
+    //     });
+    //     setSelectedFileNamesCSV(filePathsCSV);
+    // }
+
     const onResponseTempChange = (_ev: any) => {
         // for (let node of _ev.target.parentNode.childNodes) {
         //     if (node.value == _ev.target.value) {
@@ -324,7 +381,8 @@ const Chat = () => {
 
     useEffect(() => {
         fetchFeatureFlags();
-        fetchFolders();
+        //fetchFolders();
+        fetchCompleteFiles();
     }, []);
     useEffect(() => chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" }), [isLoading]);
 
@@ -535,6 +593,8 @@ const Chat = () => {
                     closeButtonAriaLabel="Close"
                     onRenderFooterContent={() => <DefaultButton onClick={() => setIsConfigPanelOpen(false)}>Close</DefaultButton>}
                     isFooterAtBottom={true}
+                    type={PanelType.custom}
+                    customWidth="600px"
                 >
                     {/* {activeChatMode == ChatMode.WorkPlusWeb &&
                         <div>
@@ -571,7 +631,7 @@ const Chat = () => {
                     {activeChatMode == ChatMode.WorkOnly &&
                         <div>
                             <Separator className={styles.chatSettingsSeparator}>Filter Search Results by</Separator>
-                            <Dropdown
+                            {/* <Dropdown
                                 label="Folder:"
                                 defaultSelectedKey={'*'}
                                 onChange={onFolderChange}
@@ -579,9 +639,17 @@ const Chat = () => {
                                 options={folderOptions}
                                 styles={dropdownFolderStyles}
                                 aria-label="folder options for file upload"
-                            /> 
+                            />  */}
                             
                             <TagPickerInline allowNewTags={false} onSelectedTagsChange={onSelectedTagsChange} preSelectedTags={selectedTags} />
+                            {gettingFilterFiles ? (
+                                <p className={styles.loadingText}>
+                                    Getting files
+                                    <span className={styles.loadingdots} />
+                                </p>) : (
+                                <DocumentsDetailList items={filterFileItems} groups={filterFileGroups} selectedFileKeys={selectedFileKeysChat.current} onSelectedFileKeysChange={onSelectedFileKeysChange} onRefreshClicked={fetchCompleteFiles} />
+                            )}
+
                         </div>
                     }
                 </Panel>

@@ -306,7 +306,41 @@ async def chat(request: Request):
     json_body = await request.json()
     approach = json_body.get("approach")
     overrides = json_body.get("overrides", {})
+    
     try:
+        userid = getuserid(request)
+        fc = os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"]
+        sfcsv = overrides.get("selected_files", "")
+        if (sfcsv == ""):
+            overrides["selected_folders"] = userid
+        else:
+            allowed_folders = getUserFolderAccess(userid, False)
+            sf = sfcsv.split(",")
+            for f in sf:
+                fallowed = False
+                for af in allowed_folders:
+                    prefix = fc + "/" + af["folder"]
+                    if f.startswith(prefix):
+                        fallowed = True
+                        break
+                if (fallowed == False):
+                    log.error(f"User {userid} trying to chat on file {f}")
+                    raise Exception("Not Allowed To Chat On this folder")
+
+
+
+        # ff = overrides.get("selected_folders", "")
+        # if (ff == ""):
+        #     overrides["selected_folders"] = getuserid(request)
+        # else:
+        #     allowed_folders = getUserFolderAccess(getuserid(request), False)
+        #     fCheck = False
+        #     for f in allowed_folders:
+        #         if (f["folder"] == ff):
+        #             fCheck = True
+        #     if (fCheck == False):
+        #         raise Exception("Not Allowed To Chat On this folder")
+
         impl = chat_approaches.get(Approaches(int(approach)))
         if not impl:
             return {"error": "unknown approach"}, 400
@@ -361,6 +395,30 @@ async def get_blob_client_url():
         expiry=datetime.utcnow() + timedelta(hours=1),
     )
     return {"url": f"{blob_client.url}?{sas_token}"}
+
+@app.post("/getcompletefiles")
+@requires_auth
+async def get_complete_files(request: Request):
+    """
+    Get the all complete files user has access to.
+
+    Parameters:
+    - request: The HTTP request object.
+
+    Returns:
+    - results: see above.
+    """
+    try:
+        userid = getuserid(request)
+        folders = getUserFolderAccess(userid, False)
+        results = statusLog.read_files_by_folders(folders, 
+            os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
+
+    except Exception as ex:
+        log.exception("Exception in /getalluploadstatus")
+        raise HTTPException(status_code=500, detail=str(ex)) from ex
+    return results
+
 
 @app.post("/getalluploadstatus")
 @requires_auth

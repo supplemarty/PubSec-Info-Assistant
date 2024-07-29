@@ -91,6 +91,26 @@ class StatusLog:
                                           if update['status_classification'] != 'Debug']
 
         return items
+    
+    def read_files_by_folders(self, folders, container: str = 'upload'):
+        state: State = State.COMPLETE
+
+        query_string = f"SELECT c.id,  c.file_path, c.file_name FROM c WHERE c.state = '{state.value}'"
+        path_prefix = container + '/'
+
+        results = []
+
+        for idx, folder in enumerate(folders):
+            f = folder["folder"]
+            folder_query_string = query_string + f" AND STARTSWITH(c.file_path, '{path_prefix + f}')"
+            items = list(self.container.query_items(
+                query=folder_query_string,
+                enable_cross_partition_query=True
+
+            ))
+            results.append({"folder": f, "items": items})
+        
+        return results
 
     def read_files_status_by_timeframe(self, 
                        within_n_hours: int,

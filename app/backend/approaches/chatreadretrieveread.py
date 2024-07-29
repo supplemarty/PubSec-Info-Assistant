@@ -146,6 +146,7 @@ class ChatReadRetrieveReadApproach(Approach):
         response_length = int(overrides.get("response_length") or 1024)
         folder_filter = overrides.get("selected_folders", "")
         tags_filter = overrides.get("selected_tags", "")
+        file_filter = overrides.get("selected_files", "")
 
         user_q = 'Generate search query for: ' + history[-1]["user"]
         thought_chain["work_query"] = user_q
@@ -210,11 +211,20 @@ class ChatReadRetrieveReadApproach(Approach):
             search_filter = f"search.in(folder, '{folder_filter}', ',')"
         else:
             search_filter = None
+
         if tags_filter != "" :
             if search_filter is not None:
                 search_filter = search_filter + f" and tags/any(t: search.in(t, '{tags_filter}', ','))"
             else:
                 search_filter = f"tags/any(t: search.in(t, '{tags_filter}', ','))"
+
+        if file_filter != "" :
+            if search_filter is not None:
+                search_filter = search_filter + f" and search.in(file_name, '{file_filter}', ',')"
+            else:
+                search_filter = f"search.in(file_name, '{file_filter}', ',')"
+
+#        #search.in(file_name, 'upload/MSupple@divcowest.com/Untitled3.pdf'
 
         # Hybrid Search
         # r = self.search_client.search(generated_query, vector_queries =[vector], top=top)

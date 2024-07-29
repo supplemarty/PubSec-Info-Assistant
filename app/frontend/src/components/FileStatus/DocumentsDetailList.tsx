@@ -415,7 +415,7 @@ export const DocumentsDetailList = ({ items, onFilesSorted, onRefresh }: Props) 
                     <span className={`${styles.refreshtext} ${styles.centeredText}`}>Resubmit</span>
                 </div>
             </div>
-            <span className={styles.footer}>{"(" + items.length as string + ") records."}</span>
+            <span className={styles.footer}>{"(" + items.length as string + ") Files."}</span>
             <DetailsList
                 items={itemList}
                 compact={true}
@@ -428,7 +428,7 @@ export const DocumentsDetailList = ({ items, onFilesSorted, onRefresh }: Props) 
                 isHeaderVisible={true}
                 onItemInvoked={onItemInvoked}
             />
-            <span className={styles.footer}>{"(" + items.length as string + ") records."}</span>
+            <span className={styles.footer}>{"(" + items.length as string + ") Files."}</span>
             {/* <Button text="Delete" onClick={handleDeleteClick} style={{ marginRight: '10px' }} />
             <Button text="Resubmit" onClick={handleResubmitClick} /> */}
             {/* Dialog for delete confirmation */}

@@ -99,4 +99,4 @@ class EmailNotifications:
     def parse_blob_name(self, blob_path):
         segments = blob_path.split("/")
         idx = 1 if blob_path[0] == "/" else 0
-        return segments[idx], segments[idx + 1]
+        return segments[idx + 1], segments[idx + 2]

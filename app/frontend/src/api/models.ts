@@ -41,6 +41,7 @@ export type ChatRequestOverrides = {
     responseTemp?: number;
     selectedFolders?: string;
     selectedTags?: string;
+    selectedFiles?: string;
 };
 
 export type ChatResponse = {
@@ -78,6 +79,17 @@ export type BlobClientUrlResponse = {
     url: string;
     error?: string;
 };
+
+export type FileUpload = {
+    id: string;
+    file_path: string;
+    file_name: string;
+}
+
+export type FileUploadFolder = {
+    folder: string;
+    items: FileUpload[];
+}
 
 export type FileUploadBasicStatus = {
     id: string;
@@ -230,3 +242,13 @@ export type GetAppIdentityResponse = {
     AZURE_WEBAPP_CLIENT_ID: string;
     error?: string;
 }
+
+export const FILE_ICONS: { [id: string]: string } = {
+    "csv": 'csv',
+    "docx": 'docx',
+    "pdf": 'pdf',
+    "pptx": 'pptx',
+    "txt": 'txt',
+    "html": 'xsn',
+    'xlsx': 'xlsx'
+};

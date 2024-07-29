@@ -18,7 +18,8 @@ import { ChatResponse,
     GetFeatureFlagsResponse,
     getMaxCSVFileSizeType,
     GetAppIdentityResponse,
-    ContentFolder
+    ContentFolder,
+    FileUploadFolder
     } from "./models";
 
 
@@ -74,8 +75,9 @@ export async function chatApi(options: ChatRequest): Promise<ChatResponse> {
                 ai_persona: options.overrides?.aiPersona,
                 response_length: options.overrides?.responseLength,
                 response_temp: options.overrides?.responseTemp,
-                // selected_folders: options.overrides?.selectedFolders,
-                selected_tags: options.overrides?.selectedTags
+                selected_folders: options.overrides?.selectedFolders,
+                selected_tags: options.overrides?.selectedTags,
+                selected_files: options.overrides?.selectedFiles
             },
             citation_lookup: options.citation_lookup,
             thought_chain: options.thought_chain
@@ -109,6 +111,23 @@ export async function getBlobClientUrl(): Promise<string> {
 
     return parsedResponse.url;
 }
+
+export async function getCompleteFiles(): Promise<FileUploadFolder[]> {
+
+    const response = await fetch("/getcompletefiles", {
+        method: "POST",
+        headers: await httpHeaders(),
+        body: JSON.stringify({})
+        });
+    
+    const parsedResponse: any = await response.json();
+    if (response.status > 299 || !response.ok) {
+        throw Error(parsedResponse.error || "Unknown error");
+    }
+    
+    return parsedResponse;
+}
+
 
 export async function getAllUploadStatus(options: GetUploadStatusRequest): Promise<AllFilesUploadStatus> {
 

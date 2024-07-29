@@ -7,7 +7,7 @@ import { Stack } from "@fluentui/react";
 import { DocumentsDetailList, IDocument } from "./DocumentsDetailList";
 // import { ArrowClockwise24Filled } from "@fluentui/react-icons";
 import { animated, useSpring } from "@react-spring/web";
-import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, FileState, getTags, getFolders } from "../../api";
+import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, FileState, getTags, getFolders, FILE_ICONS } from "../../api";
 
 import styles from "./FileStatus.module.css";
 
@@ -179,16 +179,6 @@ export const FileStatus = ({ className }: Props) => {
         }
         return items;
     }
-
-    const FILE_ICONS: { [id: string]: string } = {
-        "csv": 'csv',
-        "docx": 'docx',
-        "pdf": 'pdf',
-        "pptx": 'pptx',
-        "txt": 'txt',
-        "html": 'xsn',
-        'xlsx': 'xlsx'
-    };
 
     const animatedStyles = useSpring({
         from: { opacity: 0 },
