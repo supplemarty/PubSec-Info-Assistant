@@ -13,7 +13,11 @@ from azure.core.credentials import AzureKeyCredential
 from datetime import datetime
 from shared_code.email_notifications import EmailNotifications
 
-email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
+from azure.data.tables import TableClient
+
+tc_folders = TableClient.from_connection_string(os.environ["BLOB_CONNECTION_STRING"], "Folders")
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"], tc_folders)
+
 
 
 azure_blob_storage_account = os.environ["BLOB_STORAGE_ACCOUNT"]

@@ -11,8 +11,10 @@ from azure.search.documents import SearchClient
 from azure.storage.blob import BlobServiceClient
 from shared_code.status_log import State, StatusClassification, StatusLog
 from shared_code.email_notifications import EmailNotifications
+from azure.data.tables import TableClient
 
-email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
+tc_folders = TableClient.from_connection_string(os.environ["BLOB_CONNECTION_STRING"], "Folders")
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"], tc_folders)
 
 blob_connection_string = os.environ["BLOB_CONNECTION_STRING"]
 blob_storage_account_upload_container_name = os.environ[

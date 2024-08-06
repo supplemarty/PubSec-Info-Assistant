@@ -1,9 +1,18 @@
-def parse_blob_name(blob_path):
-    segments = blob_path.split("/")
-    idx = 1 if blob_path[0] == "/" else 0
-    return segments[idx + 1], segments[idx + 2]
+import tiktoken
+import io
+from shared_code.csv_chunker import CSVChunker
 
-blob_path = "/upload/QZhang@divcore.com/tsql.txt"
-folder, doc_name = parse_blob_name(blob_path)
-print(folder)
-print(doc_name)
+# Initialize tokenizer (assuming you are using OpenAI's tokenizer)
+encoding = tiktoken.get_encoding("cl100k_base")  # Adjust this to your specific model's tokenizer
+
+def count_tokens(text):
+    """Count the number of tokens in the given text."""
+    return len(encoding.encode(text))
+
+
+chunker = CSVChunker(max_tokens=750, token_count_func=count_tokens)
+with open("test_data/test_example.csv", "rb") as fh:
+    csv_data = io.BytesIO(fh.read())
+    chunks = chunker.chunk_csv_to_html(csv_data)
+    for i, chunk in enumerate(chunks):
+        print(f"Chunk {i+1}:\n{chunk}")

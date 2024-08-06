@@ -16,8 +16,10 @@ import time
 from requests.exceptions import RequestException
 from tenacity import retry, stop_after_attempt, wait_fixed
 from shared_code.email_notifications import EmailNotifications
+from azure.data.tables import TableClient
 
-email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
+tc_folders = TableClient.from_connection_string(os.environ["BLOB_CONNECTION_STRING"], "Folders")
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"], tc_folders)
 
 def string_to_bool(s):
     return s.lower() == 'true'

@@ -19,5 +19,8 @@ pip install -r requirements.txt --disable-pip-version-check -q
 
 BASE_PATH=$(realpath "$DIR/..")
 
+mkdir -p ./shared_code
+cp  ../functions/shared_code/csv_chunker.py ./shared_code
+
 # Marty tests
 python marty.py 

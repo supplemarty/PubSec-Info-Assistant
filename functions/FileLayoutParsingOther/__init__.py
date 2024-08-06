@@ -11,11 +11,16 @@ from azure.storage.blob import generate_blob_sas
 from azure.storage.queue import QueueClient, TextBase64EncodePolicy
 from shared_code.status_log import StatusLog, State, StatusClassification
 from shared_code.utilities import Utilities, MediaType
+from shared_code.csv_chunker import CSVChunker
 
 import requests
 from shared_code.email_notifications import EmailNotifications
 
-email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
+from azure.data.tables import TableClient
+
+tc_folders = TableClient.from_connection_string(os.environ["BLOB_CONNECTION_STRING"], "Folders")
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"], tc_folders)
+
 
 azure_blob_storage_account = os.environ["BLOB_STORAGE_ACCOUNT"]
 azure_blob_storage_endpoint = os.environ["BLOB_STORAGE_ACCOUNT_ENDPOINT"]
@@ -138,56 +143,72 @@ def main(msg: func.QueueMessage) -> None:
         response = requests.get(blob_path_plus_sas)
         response.raise_for_status()
               
-        
-        # Partition the file dependent on file extension
-        elements, metadata = PartitionFile(file_extension, blob_path_plus_sas)
-        metdata_text = ''
-        for metadata_value in metadata:
-            metdata_text += metadata_value + '\n'    
-        statusLog.upsert_document(blob_name, f'{function_name} - partitioning complete', StatusClassification.DEBUG)
-        
-        title = ''
-        # Capture the file title
-        try:
-            for i, element in enumerate(elements):
-                if title == '' and element.category == 'Title':
-                    # capture the first title
-                    title = element.text
-                    break
-        except:
-            # if this type of eleemnt does not include title, then process with emty value
-            pass
-        
-        # Chunk the file     
-        from unstructured.chunking.title import chunk_by_title
-        NEW_AFTER_N_CHARS = 2000
-        COMBINE_UNDER_N_CHARS = 1000
-        MAX_CHARACTERS = 2750
-        chunks = chunk_by_title(elements, multipage_sections=True, new_after_n_chars=NEW_AFTER_N_CHARS, combine_text_under_n_chars=COMBINE_UNDER_N_CHARS, max_characters=MAX_CHARACTERS)   
-        statusLog.upsert_document(blob_name, f'{function_name} - chunking complete. {len(chunks)} chunks created', StatusClassification.DEBUG)
-                
-        subtitle_name = ''
-        section_name = ''
-        # Complete and write chunks
-        for i, chunk in enumerate(chunks):      
-            if chunk.metadata.page_number == None:
-                page_list = [1]
-            else:
-                page_list = [chunk.metadata.page_number] 
-            # substitute html if text is a table            
-            if chunk.category == 'Table':
-                chunk_text = chunk.metadata.text_as_html
-            else:
-                chunk_text = chunk.text
-            # add filetype specific metadata as chunk text header
-            chunk_text = metdata_text + chunk_text                    
-            utilities.write_chunk(blob_name, blob_uri,
-                                f"{i}",
-                                utilities.token_count(chunk.text),
-                                chunk_text, page_list,
-                                section_name, title, subtitle_name,
-                                MediaType.TEXT
-                                )
+        if (file_extension == ".csv"):
+
+            bytes_io = BytesIO(response.content)
+            csv_chunker = CSVChunker(max_tokens=750, token_count_func=utilities.token_count)
+            chunks = csv_chunker.chunk_csv_to_html(bytes_io)
+            statusLog.upsert_document(blob_name, f'{function_name} - CSV chunking complete. {len(chunks)} chunks created', StatusClassification.DEBUG)
+
+            for i, chunk in enumerate(chunks):
+                utilities.write_chunk(blob_name, blob_uri,
+                                    f"{i}",
+                                    utilities.token_count(chunk),
+                                    chunk, [1],
+                                    '', '', '',
+                                    MediaType.TEXT
+                                    )
+
+        else:
+            # Partition the file dependent on file extension
+            elements, metadata = PartitionFile(file_extension, blob_path_plus_sas)
+            metdata_text = ''
+            for metadata_value in metadata:
+                metdata_text += metadata_value + '\n'    
+            statusLog.upsert_document(blob_name, f'{function_name} - partitioning complete', StatusClassification.DEBUG)
+            
+            title = ''
+            # Capture the file title
+            try:
+                for i, element in enumerate(elements):
+                    if title == '' and element.category == 'Title':
+                        # capture the first title
+                        title = element.text
+                        break
+            except:
+                # if this type of eleemnt does not include title, then process with emty value
+                pass
+            
+            # Chunk the file     
+            from unstructured.chunking.title import chunk_by_title
+            NEW_AFTER_N_CHARS = 2000
+            COMBINE_UNDER_N_CHARS = 1000
+            MAX_CHARACTERS = 2750
+            chunks = chunk_by_title(elements, multipage_sections=True, new_after_n_chars=NEW_AFTER_N_CHARS, combine_text_under_n_chars=COMBINE_UNDER_N_CHARS, max_characters=MAX_CHARACTERS)   
+            statusLog.upsert_document(blob_name, f'{function_name} - chunking complete. {len(chunks)} chunks created', StatusClassification.DEBUG)
+                    
+            subtitle_name = ''
+            section_name = ''
+            # Complete and write chunks
+            for i, chunk in enumerate(chunks):      
+                if chunk.metadata.page_number == None:
+                    page_list = [1]
+                else:
+                    page_list = [chunk.metadata.page_number] 
+                # substitute html if text is a table            
+                if chunk.category == 'Table':
+                    chunk_text = chunk.metadata.text_as_html
+                else:
+                    chunk_text = chunk.text
+                # add filetype specific metadata as chunk text header
+                chunk_text = metdata_text + chunk_text                    
+                utilities.write_chunk(blob_name, blob_uri,
+                                    f"{i}",
+                                    utilities.token_count(chunk.text),
+                                    chunk_text, page_list,
+                                    section_name, title, subtitle_name,
+                                    MediaType.TEXT
+                                    )
         
         statusLog.upsert_document(blob_name, f'{function_name} - chunking stored.', StatusClassification.DEBUG)   
         

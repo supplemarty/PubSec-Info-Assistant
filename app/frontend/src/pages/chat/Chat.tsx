@@ -487,7 +487,10 @@ const Chat = () => {
                                 </div>
                             }
                             <span className={styles.chatEmptyObjectives}>
-                                <i>This chat uses AI. Check for mistakes.   </i><a href="https://github.com/microsoft/PubSec-Info-Assistant/blob/main/docs/transparency.md" target="_blank" rel="noopener noreferrer">Transparency Note</a>
+                                <i>This chat uses AI. Check for mistakes.</i><a href="https://github.com/microsoft/PubSec-Info-Assistant/blob/main/docs/transparency.md" target="_blank" rel="noopener noreferrer">Transparency Note</a>
+                                <div>
+                                    <a href="https://divcowest.sharepoint.com/Information%20Security%20Document%20Library/DivCore%20GenAI%20-%20Acceptable%20Use%20Policy.pdf" target="_blank" rel="noopener noreferrer">DivCore AI Policy Document</a>
+                                </div>
                             </span>
                             {/* {activeChatMode != ChatMode.Ungrounded &&
                                 <div>

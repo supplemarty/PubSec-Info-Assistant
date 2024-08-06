@@ -15,8 +15,10 @@ from azure.core.credentials import AzureKeyCredential
 from shared_code.utilities_helper import UtilitiesHelper
 from urllib.parse import unquote
 from shared_code.email_notifications import EmailNotifications
+from azure.data.tables import TableClient
 
-email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"])
+tc_folders = TableClient.from_connection_string(os.environ["BLOB_CONNECTION_STRING"], "Folders")
+email_notifications = EmailNotifications(os.environ["EMAIL_CONNECTION_STRING"], os.environ["NOTIFICATION_EMAIL_SENDER"], os.environ["ERROR_EMAIL_RECIPS_CSV"], tc_folders)
 
 
 azure_blob_connection_string = os.environ["BLOB_CONNECTION_STRING"]
