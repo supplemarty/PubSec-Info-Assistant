@@ -11,7 +11,7 @@ import { TagPickerInline } from "../../components/TagPicker/TagPicker"
 // import { FolderPicker } from '../../components/FolderPicker/FolderPicker';
 import { SparkleFilled, DocumentPdfFilled, DocumentDataFilled, GlobePersonFilled, MailFilled, StoreMicrosoftFilled } from "@fluentui/react-icons";
 import styles from "./Content.module.css";
-//import { IdentityManager } from "../../identity";
+import { IdentityManager } from "../../identity";
 import { getFolders } from "../../api";
 
 
@@ -53,20 +53,35 @@ const Content = () => {
 
     const fetchFolders = async () => {
         try {
-            const folders = await getFolders("canmanage"); // Await the promise
+
             let folderDropdownOptions: IDropdownOption[] = [];
             let selectedFolder: IDropdownOption | undefined = undefined;
-            folders.forEach((folder) => {
-                let opt : IDropdownOption = { key: folder.folder, text: folder.folder };
-                if (folder.default == true) {
-                    opt.key = "*";
-                    selectedFolder = opt;
+
+            // Add current user folder on client so not waiting on server
+            const user = await IdentityManager.GetCurrentUser(true);
+            if (user.Email) {
+                const userFolder : IDropdownOption = { key: "*", text: user.Email, data: { email_recips: [user.Email] } };
+                folderDropdownOptions.push(userFolder);
+                selectedFolder = userFolder;
+                setFolderOptions(folderDropdownOptions);
+                setSelectedFolderItem(selectedFolder);
+            }
+
+            const folders = await getFolders("canmanage"); // Await the promise
+            if (folders.length > 1) {
+                folders.forEach((folder) => {
+                    if (folder.folder != user.Email) {
+                        let opt : IDropdownOption = { key: folder.folder, text: folder.folder, data: { email_recips: folder.email_recips } };
+                        folderDropdownOptions.push(opt);
+                    }
+                });
+                
+                setFolderOptions(folderDropdownOptions);
+                if (!selectedFolder) {
+                    selectedFolder = folderDropdownOptions[0];
+                    setSelectedFolderItem(selectedFolder);
                 }
-                folderDropdownOptions.push(opt);
-            });
-            // ({ key: folder.default == true ? "*" : folder.folder, text: folder.folder }));
-            setFolderOptions(folderDropdownOptions);
-            setSelectedFolderItem(selectedFolder);
+            }
         }
         catch (e) {
             console.log(e);
@@ -139,7 +154,7 @@ const Content = () => {
                             /> 
                             
                             <TagPickerInline allowNewTags={true} onSelectedTagsChange={onSelectedTagsChanged}/>
-                            <FilePicker folderPath={SelectedFolderItem?.text || ""} tags={selectedTags || []}/>
+                            <FilePicker folderPath={SelectedFolderItem?.text || ""} tags={selectedTags || []} email_recips={SelectedFolderItem?.data.email_recips} />
                         </div>
                     </div>
                 </PivotItem>

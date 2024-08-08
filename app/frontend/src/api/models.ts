@@ -20,7 +20,7 @@ export const enum Approaches {
 export type ContentFolder = {
     folder: string;
     canmanage: boolean;
-    default: boolean;
+    email_recips: string[];
 }
 
 export type ChatRequestOverrides = {

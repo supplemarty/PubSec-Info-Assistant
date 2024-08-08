@@ -121,11 +121,11 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/functions",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/functions"
-             },
-            "envFile": "${workspaceFolder}/scripts/environments/infrastructure.debug.env"
+            "cwd": "${workspaceFolder}/tests"
+            // "env": {
+            //     "PYTHONPATH": "${workspaceFolder}/functions"
+            //  },
+            // "envFile": "${workspaceFolder}/scripts/environments/infrastructure.debug.env"
         }
     ]
 }

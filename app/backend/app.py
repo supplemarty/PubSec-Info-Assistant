@@ -167,6 +167,7 @@ model_name = ''
 model_version = ''
 
 tc_user_access = TableClient.from_connection_string(ENV["BLOB_CONNECTION_STRING"], "UserFolderAccess")
+tc_folders = TableClient.from_connection_string(ENV["BLOB_CONNECTION_STRING"], "Folders")
 
 # Set up OpenAI management client
 openai_mgmt_client = CognitiveServicesManagementClient(
@@ -479,15 +480,28 @@ async def get_all_upload_status(request: Request):
 #table_client_user_folder_access
 
 def getUserFolderAccess(userid, canmanage):
-    folders = [{ "folder": userid, "canmanage": True, "default": True }]
+
+    folders = [{ "folder": userid, "canmanage": True, "email_recips": [userid] }]
     userfoldersquery = tc_user_access.query_entities(f"PartitionKey eq 'user' and RowKey eq '{userid}'")
     userfolderres = [a for a in userfoldersquery]
     if (len(userfolderres) == 1):
         userfolders = userfolderres[0]
         if ("FolderPermissionJson" in userfolders):
-            assigned_folders = [{ "folder": f["folder"], "canmanage": f["canmanage"], "default": False } for f in json.loads(userfolders["FolderPermissionJson"])]
-            if (canmanage == True):
-                folders += [f for f in assigned_folders if f["canmanage"] == True]
+            assigned_folders = [];
+            for f in json.loads(userfolders["FolderPermissionJson"]):
+                assigned_folder = { "folder": f["folder"], "canmanage": f["canmanage"], "email_recips": [] }
+                f_name = f["folder"]
+                folderentityquery = tc_folders.query_entities(f"PartitionKey eq 'folder' and RowKey eq '{f_name}'")
+                folderres = [a for a in folderentityquery]
+                if (len(folderres) == 1):
+                    folder_entity = folderres[0]
+                    if ("EmailRecipientsJson" in folder_entity):
+                        assigned_folder["email_recips"] = json.loads(folder_entity["EmailRecipientsJson"])
+                                
+                assigned_folders.append(assigned_folder)
+
+            if (canmanage is True):
+                folders += [f for f in assigned_folders if f["canmanage"] is True]
             else:
                 folders += assigned_folders
             

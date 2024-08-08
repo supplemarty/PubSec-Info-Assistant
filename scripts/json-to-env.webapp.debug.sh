@@ -90,7 +90,7 @@ jq -r  '
         },
         {
             "path": "BLOB_STORAGE_ACCOUNT_ENDPOINT",
-            "env_var": "BLOB_STORAGE_ACCOUNT_ENDPOINT"
+            "env_var": "AZURE_BLOB_STORAGE_ENDPOINT"
         },
         {
             "path": "TARGET_EMBEDDINGS_MODEL",

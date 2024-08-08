@@ -35,6 +35,18 @@ async function httpHeaders() : Promise<HeadersInit> {
     return h;
 }
 
+async function authFetch(url :string, init: RequestInit) : Promise<Response> {
+
+    init.headers = await httpHeaders();
+    let resp = await fetch(url, init);
+    if (resp.status == 401) {
+        IdentityManager.ResetAccessToken()
+        init.headers = await httpHeaders();
+        resp = await fetch(url, init);
+    }
+    return resp;
+}
+
 export async function getAppIdentity() : Promise<GetAppIdentityResponse> {
     const response = await fetch("/getAppIdentity", {
         method: "GET",
@@ -53,9 +65,8 @@ export async function getAppIdentity() : Promise<GetAppIdentityResponse> {
 
 export async function chatApi(options: ChatRequest): Promise<ChatResponse> {
 
-    const response = await fetch("/chat", {
+    const response = await authFetch("/chat", {
         method: "POST",
-        headers: await httpHeaders(),
         body: JSON.stringify({
             history: options.history,
             approach: options.approach,
@@ -114,9 +125,8 @@ export async function getBlobClientUrl(): Promise<string> {
 
 export async function getCompleteFiles(): Promise<FileUploadFolder[]> {
 
-    const response = await fetch("/getcompletefiles", {
+    const response = await authFetch("/getcompletefiles", {
         method: "POST",
-        headers: await httpHeaders(),
         body: JSON.stringify({})
         });
     
@@ -131,9 +141,8 @@ export async function getCompleteFiles(): Promise<FileUploadFolder[]> {
 
 export async function getAllUploadStatus(options: GetUploadStatusRequest): Promise<AllFilesUploadStatus> {
 
-    const response = await fetch("/getalluploadstatus", {
+    const response = await authFetch("/getalluploadstatus", {
         method: "POST",
-        headers: await httpHeaders(),
         body: JSON.stringify({
             timeframe: options.timeframe,
             state: options.state as string,
@@ -201,9 +210,8 @@ export async function resubmitItem(options: ResubmitItemRequest): Promise<boolea
 
 
 export async function getFolders(filter: string): Promise<ContentFolder[]> {
-    const response = await fetch("/getfolders", {
+    const response = await authFetch("/getfolders", {
         method: "POST",
-        headers: await httpHeaders(),
         body: JSON.stringify({filter})
         });
     
@@ -222,9 +230,8 @@ export async function getFolders(filter: string): Promise<ContentFolder[]> {
 
 
 export async function getTags(): Promise<string[]> {
-    const response = await fetch("/gettags", {
+    const response = await authFetch("/gettags", {
         method: "POST",
-        headers: await httpHeaders(),
         body: JSON.stringify({
             })
         });
@@ -514,9 +521,8 @@ export async function getCitationObj(citation: string): Promise<ActiveCitation> 
 // }
 
 export async function getAllTags(): Promise<GetTagsResponse> {
-    const response = await fetch("/getalltags", {
-        method: "GET",
-        headers: await httpHeaders()
+    const response = await authFetch("/getalltags", {
+        method: "GET"
     });
 
     const parsedResponse: any = await response.json();

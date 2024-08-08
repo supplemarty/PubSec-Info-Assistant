@@ -41,6 +41,10 @@ export class IdentityManager {
         await msalClient?.handleRedirectPromise();
     }
 
+    public static ResetAccessToken() {
+        IdentityManager.getAccessTokenPromise = undefined;
+    }
+
     public static async GetCurrentUser(login: boolean = true) : Promise<SecureUser>
     {
         let token: string | undefined;
@@ -63,7 +67,7 @@ export class IdentityManager {
 
     }
 
-    private static getAccessTokenPromise : Promise<string | undefined>;        // Cache the promise so we only do the work once on this page
+    private static getAccessTokenPromise : Promise<string | undefined> | undefined;        // Cache the promise so we only do the work once on this page
     private static async __getAccessToken(login: boolean) : Promise<string | undefined> {
      if (!IdentityManager.getAccessTokenPromise) {
         IdentityManager.getAccessTokenPromise = IdentityManager._getAccessToken(login);

@@ -8,7 +8,7 @@ import { DocumentsDetailList, IDocument } from "./DocumentsDetailList";
 // import { ArrowClockwise24Filled } from "@fluentui/react-icons";
 import { animated, useSpring } from "@react-spring/web";
 import { getAllUploadStatus, FileUploadBasicStatus, GetUploadStatusRequest, FileState, getTags, getFolders, FILE_ICONS } from "../../api";
-
+import { IdentityManager } from "../../identity";
 import styles from "./FileStatus.module.css";
 
 // const dropdownTimespanStyles: Partial<IDropdownStyles> = { dropdown: { width: 150 } };
@@ -119,9 +119,25 @@ export const FileStatus = ({ className }: Props) => {
     // fetch unique folder names 
     const fetchFolders = async () => {
         try {
+            let folderDropdownOptions: IDropdownOption[] = [];
+            const user = await IdentityManager.GetCurrentUser(true);
+            if (user.Email) {
+                const userFolder : IDropdownOption = { key: "*", text: user.Email, data: { email_recips: [user.Email] } };
+                folderDropdownOptions.push(userFolder);
+                setFolderOptions(folderDropdownOptions);
+            }
+
             const folders = await getFolders("canmanage"); // Await the promise
-            const folderDropdownOptions = folders.map((folder) => ({ key: folder.default == true ? "*" : folder.folder, text: folder.folder }));
-            setFolderOptions(folderDropdownOptions);
+            if (folders.length > 1) {
+                folders.forEach((folder) => {
+                    if (folder.folder != user.Email) {
+                        let opt : IDropdownOption = { key: folder.folder, text: folder.folder, data: { email_recips: folder.email_recips } };
+                        folderDropdownOptions.push(opt);
+                    }
+                });
+                
+                setFolderOptions(folderDropdownOptions);
+            }
         }
         catch (e) {
             console.log(e);

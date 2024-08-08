@@ -9,18 +9,19 @@ import { DropZone } from "./drop-zone"
 import styles from "./file-picker.module.css";
 import { FilesList } from "./files-list";
 import { getBlobClientUrl, logStatus, StatusLogClassification, StatusLogEntry, StatusLogState } from "../../api";
-import { IdentityManager, SecureUser } from "../../identity";
+//import { IdentityManager, SecureUser } from "../../identity";
 
 interface Props {
   folderPath: string;
   tags: string[];
+  email_recips: string[];
 }
 
-const FilePicker = ({folderPath, tags}: Props) => {
+const FilePicker = ({folderPath, tags, email_recips}: Props) => {
   const [files, setFiles] = useState<any>([]);
   const [progress, setProgress] = useState(0);
   const [uploadStarted, setUploadStarted] = useState(false);
-  const [user, setUser] = useState<SecureUser>();
+  //const [user, setUser] = useState<SecureUser>();
 
   const acceptedFileTypes = ['.XML', '.JSON', '.CSV', '.PPTX', '.DOCX', '.PDF', '.TXT', '.XLSX', '.HTM', '.HTML', '.EML', '.MSG'];
 
@@ -56,11 +57,11 @@ const FilePicker = ({folderPath, tags}: Props) => {
   // whether to show the progress bar or not
   const canShowProgress = useMemo(() => files.length > 0, [files.length]);
 
-  useEffect(() => {
-    IdentityManager.GetCurrentUser(true).then(u => {
-      setUser(u);
-    });
-}, []);
+//   useEffect(() => {
+//     IdentityManager.GetCurrentUser(true).then(u => {
+//       setUser(u);
+//     });
+// }, []);
 
 
   // execute the upload operation
@@ -165,7 +166,7 @@ const FilePicker = ({folderPath, tags}: Props) => {
           {`Upload ${files.length} Files`}
         </button>
       ) : null}
-      <div>You will recieve an email at {user?.Email} for each document when it is ready for chat.</div>
+      {email_recips ? (<div>Email Notifications will be sent to: {email_recips.join(',')} for each document when it is ready for chat.</div>) : null}
     </div>
   );
 };
