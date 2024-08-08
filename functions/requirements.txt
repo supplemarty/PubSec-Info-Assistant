@@ -21,3 +21,4 @@ unstructured[csv,doc,docx,email,html,md,msg,ppt,pptx,text,xlsx,xml] == 0.12.5
 pyoo == 1.4
 azure-search-documents == 11.4.0b11
 beautifulsoup4 == 4.12.2
+azure-identity==1.12.0

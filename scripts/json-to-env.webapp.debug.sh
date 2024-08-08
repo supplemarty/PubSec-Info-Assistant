@@ -85,8 +85,12 @@ jq -r  '
             "env_var": "BLOB_STORAGE_ACCOUNT_OUTPUT_CONTAINER_NAME"
         },
         {
+            "path": "AZURE_BLOB_DROP_STORAGE_CONTAINER",
+            "env_var": "BLOB_STORAGE_ACCOUNT_UPLOAD_CONTAINER_NAME"
+        },
+        {
             "path": "BLOB_STORAGE_ACCOUNT_ENDPOINT",
-            "env_var": "AZURE_BLOB_STORAGE_ENDPOINT"
+            "env_var": "BLOB_STORAGE_ACCOUNT_ENDPOINT"
         },
         {
             "path": "TARGET_EMBEDDINGS_MODEL",
@@ -196,6 +200,7 @@ jq -r  '
     echo "ENABLE_MATH_ASSISTANT=$ENABLE_MATH_ASSISTANT"
     echo "ENABLE_TABULAR_DATA_ASSISTANT=$ENABLE_TABULAR_DATA_ASSISTANT"
     echo "ENABLE_MULTIMEDIA=$ENABLE_MULTIMEDIA"
+    echo "SHAREPOINT_HOST_NAME='divcowest.sharepoint.com'"
 
 if [ -n "${IN_AUTOMATION}" ]; then
     if [ -n "${AZURE_ENVIRONMENT}" ] && [[ "$AZURE_ENVIRONMENT" == "AzureUSGovernment" ]]; then
@@ -210,7 +215,8 @@ fi
 keyVaultName=$(cat inf_output.json | jq -r .DEPLOYMENT_KEYVAULT_NAME.value)
 
 # Names of your secrets
-secretNames=("AZURE-SEARCH-SERVICE-KEY" "AZURE-BLOB-STORAGE-KEY" "BLOB-CONNECTION-STRING" "COSMOSDB-KEY" "BINGSEARCH-KEY" "AZURE-OPENAI-SERVICE-KEY" "AZURE-CLIENT-SECRET" "ENRICHMENT-KEY")
+secretNames=("AZURE-SEARCH-SERVICE-KEY" "AZURE-BLOB-STORAGE-KEY" "BLOB-CONNECTION-STRING" "COSMOSDB-KEY" "BINGSEARCH-KEY" "AZURE-OPENAI-SERVICE-KEY" "AZURE-CLIENT-SECRET" "ENRICHMENT-KEY"
+ "DIVCO-ETL-AZURE-CLIENT-ID" "DIVCO-ETL-AZURE-CLIENT-SECRET" "DIVCO-ETL-AZURE-TENANT-ID")
 
 # Retrieve and export each secret
 for secretName in "${secretNames[@]}"; do
