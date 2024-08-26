@@ -107,7 +107,8 @@ ENV = {
     "MAX_CSV_FILE_SIZE": "7",
     "AZURE_TENANT_ID": "",
     "AZURE_WEBAPP_CLIENT_ID": "",
-    "BLOB_CONNECTION_STRING": None
+    "BLOB_CONNECTION_STRING": None,
+    "LOG_LEVEL": "DEBUG", # Will be overwritten by LOG_LEVEL in Environment
     }
 
 for key, value in ENV.items():
@@ -120,8 +121,18 @@ for key, value in ENV.items():
 str_to_bool = {'true': True, 'false': False}
 
 log = logging.getLogger("uvicorn")
-log.setLevel('DEBUG')
+log.setLevel(logging.DEBUG)
+log.debug("HELLO")
 log.propagate = True
+
+app_log = logging.getLogger("backend")
+log2sh = logging.StreamHandler()
+log2sh.formatter = logging.Formatter(logging.BASIC_FORMAT)
+app_log.addHandler(log2sh)
+app_log.setLevel(ENV["LOG_LEVEL"])
+app_log.info("Backend Web App Starting up")
+
+
 
 dffinal = None
 # Used by the OpenAI SDK
@@ -282,6 +293,8 @@ app = FastAPI(
 def getuserid(request: Request):
     tc = get_token_claims(request)
     uid = tc["upn"]
+    m = f"UserId: [{uid}] URL: [{request.url.path}]"
+    app_log.debug(m)
     return uid
 
 @app.get("/", include_in_schema=False, response_class=RedirectResponse)
@@ -416,6 +429,7 @@ async def get_complete_files(request: Request):
             os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
 
     except Exception as ex:
+        app_log.exception("Exception in /getalluploadstatus")
         log.exception("Exception in /getalluploadstatus")
         raise HTTPException(status_code=500, detail=str(ex)) from ex
     return results
@@ -482,12 +496,17 @@ async def get_all_upload_status(request: Request):
 def getUserFolderAccess(userid, canmanage):
 
     folders = [{ "folder": userid, "canmanage": True, "email_recips": [userid] }]
-    userfoldersquery = tc_user_access.query_entities(f"PartitionKey eq 'user' and RowKey eq '{userid}'")
+    qs = f"PartitionKey eq 'user' and RowKey eq '{userid.lower()}'"
+    app_log.debug(qs)
+    userfoldersquery = tc_user_access.query_entities(qs)
     userfolderres = [a for a in userfoldersquery]
+    msg = f"qu: {qs}, canmanage: {canmanage}, returned: {len(userfolderres)}"
+    app_log.debug(msg)
     if (len(userfolderres) == 1):
         userfolders = userfolderres[0]
         if ("FolderPermissionJson" in userfolders):
             assigned_folders = [];
+            app_log.debug(userfolders["FolderPermissionJson"])
             for f in json.loads(userfolders["FolderPermissionJson"]):
                 assigned_folder = { "folder": f["folder"], "canmanage": f["canmanage"], "email_recips": [] }
                 f_name = f["folder"]
@@ -505,6 +524,8 @@ def getUserFolderAccess(userid, canmanage):
             else:
                 folders += assigned_folders
             
+    msg = f"Returning: {len(folders)} folders"
+    app_log.debug(msg)
     return folders
 
 
