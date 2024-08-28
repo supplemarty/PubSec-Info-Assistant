@@ -123,24 +123,31 @@ def main(mytimer: func.TimerRequest) -> None:
     for blob in deleted_blobs:
         try:
             blob_name = blob
-            deleted_content_blobs = delete_content_blobs(blob_service_client, blob)
-            logging.info("%s content blobs deleted.", str(len(deleted_content_blobs)))
-            delete_search_entries(deleted_content_blobs)
-            status_log.delete_doc(blob)
 
-            # for doc in deleted_blobs:
-            doc_base = os.path.basename(blob)
-            doc_path = f"upload/{format(blob)}"
+            # Only process if this blob has not already been processed
+            if status_log.read_file_state(f"upload/{format(blob)}") == State.DELETED:
+                logging.info("Blob %s has already been deleted.", blob)
+                continue
 
-            temp_doc_id = status_log.encode_document_id(doc_path)
+            else:            
+                deleted_content_blobs = delete_content_blobs(blob_service_client, blob)
+                logging.info("%s content blobs deleted.", str(len(deleted_content_blobs)))
+                delete_search_entries(deleted_content_blobs)
+                status_log.delete_doc(blob)
 
-            logging.info("Modifying status for doc %s \n \t with ID %s", doc_base, temp_doc_id)
+                # for doc in deleted_blobs:
+                doc_base = os.path.basename(blob)
+                doc_path = f"upload/{format(blob)}"
 
-            status_log.upsert_document(doc_path,
-                                    'Document chunks, tags, and entries in AI Search have been deleted',
-                                    StatusClassification.INFO,
-                                    State.DELETED)
-            status_log.save_document(doc_path)                
+                temp_doc_id = status_log.encode_document_id(doc_path)
+
+                logging.info("Modifying status for doc %s \n \t with ID %s", doc_base, temp_doc_id)
+
+                status_log.upsert_document(doc_path,
+                                        'Document chunks, tags, and entries in AI Search have been deleted',
+                                        StatusClassification.INFO,
+                                        State.DELETED)
+                status_log.save_document(doc_path)                
             
         except Exception as err:
             logging.info("An exception occured with doc %s: %s", blob_name, str(err))
