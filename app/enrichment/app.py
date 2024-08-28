@@ -21,7 +21,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi_utils.tasks import repeat_every
 from model_handling import load_models
-import openai
+from openai import AzureOpenAI
 from tenacity import retry, wait_random_exponential, stop_after_attempt, wait_fixed
 from sentence_transformers import SentenceTransformer
 from shared_code.utilities_helper import UtilitiesHelper
@@ -89,9 +89,12 @@ class AzOAIEmbedding(object):
     """A wrapper for a Azure OpenAI Embedding model"""
     def __init__(self, deployment_name, api_base, api_key, bulk_use) -> None:
         self.deployment_name = deployment_name
-        self.api_base = api_base
-        self.api_key = api_key
         self.bulk_use = bulk_use
+        self.client = AzureOpenAI(
+            azure_endpoint = api_base, 
+            api_key=api_key,  
+            api_version="2024-02-01")
+
 
     @retry(wait=wait_fixed(5), stop=stop_after_attempt(15))
     def encode_bulk(self, texts):
@@ -103,14 +106,11 @@ class AzOAIEmbedding(object):
     
     def encode_internal(self, texts):
         """Embeds a list of texts using a given model"""
-        response = openai.Embedding.create(
-            engine=self.deployment_name,
-            input=texts,
-            api_base = self.api_base,
-            api_type = "azure",
-            api_key = self.api_key,
-            api_version = "2023-12-01-preview"
-        )
+
+        response = self.client.embeddings.create(
+            model= self.deployment_name,
+            input=texts)
+
         return response
 
     @retry(wait=wait_random_exponential(multiplier=1, max=10), stop=stop_after_attempt(5))
@@ -269,7 +269,8 @@ def embed_texts(model: str, texts: List[str]):
     try:
         if model.startswith("azure-openai_"):
             embeddings = model_obj.encode(texts)
-            embeddings = embeddings['data'][0]['embedding']
+            embeddings= embeddings.data[0].embedding
+            
         else:
             embeddings = model_obj.encode(texts)
             embeddings = embeddings.tolist()[0]
@@ -510,7 +511,3 @@ def poll_queue() -> None:
 
             except Exception as error:
                 logging.error(f"Failed to send notification email: {str(error)}")
-
-
-
-
