@@ -63,7 +63,7 @@ export async function getAppIdentity() : Promise<GetAppIdentityResponse> {
     return parsedResponse;
 }
 
-export async function chatApi(options: ChatRequest): Promise<ChatResponse> {
+export async function chatApi(options: ChatRequest, signal: AbortSignal): Promise<Response> {
 
     const response = await authFetch("/chat", {
         method: "POST",
@@ -92,15 +92,15 @@ export async function chatApi(options: ChatRequest): Promise<ChatResponse> {
             },
             citation_lookup: options.citation_lookup,
             thought_chain: options.thought_chain
-        })
+        }),
+        signal: signal
     });
 
-    const parsedResponse: ChatResponse = await response.json();
     if (response.status > 299 || !response.ok) {
-        throw Error(parsedResponse.detail || parsedResponse.error || "Unknown error");
+        throw Error("Unknown error");
     }
    
-    return parsedResponse;
+    return response;
 }
 
 export function getCitationFilePath(citation: string): string {
