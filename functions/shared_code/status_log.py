@@ -315,12 +315,12 @@ class StatusLog:
             stackstr += '  ' + traceback.format_exc().lstrip(trc)
         return stackstr
 
-    def get_all_tags(self, userid: str):
-        """ Returns all tags in the database """
-        #query = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags"
-        query = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags Where c.file_path LIKE 'upload/" + userid + "/%'"
-        tag_array = self.container.query_items(query=query, enable_cross_partition_query=True)
-        return ",".join(tag_array)
+    # def get_all_tags(self, userid: str):
+    #     """ Returns all tags in the database """
+    #     #query = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags"
+    #     query = "SELECT DISTINCT VALUE t FROM c JOIN t IN c.tags Where c.file_path LIKE 'upload/" + userid + "/%'"
+    #     tag_array = self.container.query_items(query=query, enable_cross_partition_query=True)
+    #     return ",".join(tag_array)
     
     def delete_doc(self, doc: str) -> None:
         '''Deletes doc for a file paths'''

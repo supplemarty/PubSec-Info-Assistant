@@ -223,10 +223,10 @@ export type ApplicationTitle = {
     error?: string;
 };
 
-export type GetTagsResponse = {
-    tags: string;
-    error?: string;
-}
+// export type GetTagsResponse = {
+//     tags: string;
+//     error?: string;
+// }
 
 export type GetFeatureFlagsResponse = {
     ENABLE_WEB_CHAT: boolean;

@@ -59,8 +59,8 @@ const Content = () => {
 
             // Add current user folder on client so not waiting on server
             const user = await IdentityManager.GetCurrentUser(true);
-            if (user.Email) {
-                const userFolder : IDropdownOption = { key: "*", text: user.Email, data: { email_recips: [user.Email] } };
+            if (user.Email && user.UserId) {
+                const userFolder : IDropdownOption = { key: "*", text: user.UserId, data: { email_recips: [user.Email] } };
                 folderDropdownOptions.push(userFolder);
                 selectedFolder = userFolder;
                 setFolderOptions(folderDropdownOptions);
@@ -70,7 +70,7 @@ const Content = () => {
             const folders = await getFolders("canmanage"); // Await the promise
             if (folders.length > 1) {
                 folders.forEach((folder) => {
-                    if (folder.folder != user.Email) {
+                    if (folder.folder != user.UserId) {
                         let opt : IDropdownOption = { key: folder.folder, text: folder.folder, data: { email_recips: folder.email_recips } };
                         folderDropdownOptions.push(opt);
                     }

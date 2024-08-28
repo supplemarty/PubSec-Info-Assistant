@@ -4,7 +4,7 @@
 import React, { useRef } from 'react';
 //import { Button } from '@fluentui/react';
 import { Accordion, Card, Button } from 'react-bootstrap';
-import {getHint, processAgentResponse, getSolve, streamData} from "../../api";
+import {getHint, processAgentResponse, streamData} from "../../api";
 import { useEffect, useState } from "react";
 import styles from './Tutor.module.css';
 import ReactMarkdown from 'react-markdown';

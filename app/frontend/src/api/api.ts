@@ -12,7 +12,7 @@ import { ChatResponse,
     StatusLogEntry, 
     StatusLogResponse, 
     // ApplicationTitle, 
-    GetTagsResponse,
+    //GetTagsResponse,
     DeleteItemRequest,
     ResubmitItemRequest,
     GetFeatureFlagsResponse,
@@ -295,21 +295,21 @@ export async function streamTdData(question: string, file: File): Promise<EventS
     return eventSource;
 }
 
-export async function getSolve(question: string): Promise<String[]> {
-    const response = await fetch(`/getSolve?question=${encodeURIComponent(question)}`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
+// export async function getSolve(question: string): Promise<String[]> {
+//     const response = await fetch(`/getSolve?question=${encodeURIComponent(question)}`, {
+//         method: "GET",
+//         headers: {
+//             "Content-Type": "application/json"
+//         }
+//     });
     
-    const parsedResponse: String[] = await response.json();
-    if (response.status > 299 || !response.ok) {
-        throw Error("Unknown error");
-    }
+//     const parsedResponse: String[] = await response.json();
+//     if (response.status > 299 || !response.ok) {
+//         throw Error("Unknown error");
+//     }
 
-    return parsedResponse;
-}
+//     return parsedResponse;
+// }
 export async function refresh(): Promise<String[]> {
     const response = await fetch(`/refresh?`, {
         method: "POST",
@@ -520,19 +520,19 @@ export async function getCitationObj(citation: string): Promise<ActiveCitation> 
 //     return parsedResponse;
 // }
 
-export async function getAllTags(): Promise<GetTagsResponse> {
-    const response = await authFetch("/getalltags", {
-        method: "GET"
-    });
+// export async function getAllTags(): Promise<GetTagsResponse> {
+//     const response = await authFetch("/getalltags", {
+//         method: "GET"
+//     });
 
-    const parsedResponse: any = await response.json();
-    if (response.status > 299 || !response.ok) {
-        console.log(response);
-        throw Error(parsedResponse.error || "Unknown error");
-    }
-    var results: GetTagsResponse = {tags: parsedResponse};
-    return results;
-}
+//     const parsedResponse: any = await response.json();
+//     if (response.status > 299 || !response.ok) {
+//         console.log(response);
+//         throw Error(parsedResponse.error || "Unknown error");
+//     }
+//     var results: GetTagsResponse = {tags: parsedResponse};
+//     return results;
+//}
 
 export async function getFeatureFlags(): Promise<GetFeatureFlagsResponse> {
     const response = await fetch("/getFeatureFlags", {

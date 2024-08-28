@@ -7,7 +7,7 @@ import { TooltipHost,
 import { Info16Regular } from '@fluentui/react-icons';
 import { mergeStyles } from '@fluentui/react/lib/Styling';
 import { useId } from '@fluentui/react-hooks';
-import { getAllTags } from "../../api";
+import { getTags } from "../../api";
 
 import styles from "./TagPicker.module.css";
 
@@ -90,15 +90,8 @@ export const TagPickerInline = ({allowNewTags, onSelectedTagsChange, preSelected
 
     async function fetchTagsfromCosmos() {
       try {
-        const response = await getAllTags();
-        var newTags: ITag[] = [];
-        response.tags.split(",").forEach((tag: string) => {
-          const trimmedTag = tag.trim();
-          if (trimmedTag !== "" && !newTags.some(t => t.key === trimmedTag)) {
-            const newTag: any = { key: trimmedTag, name: trimmedTag, isNewItem: false };
-            newTags.push(newTag);
-          }
-        });
+        const tags = await getTags();
+        const newTags: ITag[] = tags.map((tag: string) => ({ key: tag, name: tag, isNewItem: false }));
         setTags(newTags);
         if (preSelectedTags !== undefined && preSelectedTags.length > 0) {
           setSelectedTags(preSelectedTags);

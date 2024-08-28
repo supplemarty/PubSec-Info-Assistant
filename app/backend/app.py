@@ -290,12 +290,13 @@ app = FastAPI(
     docs_url="/docs",
 )
 
-def getuserid(request: Request):
+def getuseridAndEmail(request: Request):
     tc = get_token_claims(request)
     uid = tc["upn"]
-    m = f"UserId: [{uid}] URL: [{request.url.path}]"
+    email = tc["email"]
+    m = f"UserId: [{uid}], Email[{email}] URL: [{request.url.path}]"
     app_log.debug(m)
-    return uid
+    return uid, email
 
 @app.get("/", include_in_schema=False, response_class=RedirectResponse)
 async def root():
@@ -322,13 +323,13 @@ async def chat(request: Request):
     overrides = json_body.get("overrides", {})
     
     try:
-        userid = getuserid(request)
+        userid, email = getuseridAndEmail(request)
         fc = os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"]
         sfcsv = overrides.get("selected_files", "")
         if (sfcsv == ""):
             overrides["selected_folders"] = userid
         else:
-            allowed_folders = getUserFolderAccess(userid, False)
+            allowed_folders = getUserFolderAccess(userid, email, False)
             sf = sfcsv.split(",")
             for f in sf:
                 fallowed = False
@@ -423,8 +424,8 @@ async def get_complete_files(request: Request):
     - results: see above.
     """
     try:
-        userid = getuserid(request)
-        folders = getUserFolderAccess(userid, False)
+        userid, email = getuseridAndEmail(request)
+        folders = getUserFolderAccess(userid, email, False)
         results = statusLog.read_files_by_folders(folders, 
             os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
 
@@ -459,7 +460,7 @@ async def get_all_upload_status(request: Request):
             folder = "*"
         
         if (folder == "*"):
-            folder = getuserid(request)
+            folder, email = getuseridAndEmail(request)
 
         results = statusLog.read_files_status_by_timeframe(timeframe, 
             State[state], 
@@ -493,9 +494,9 @@ async def get_all_upload_status(request: Request):
 
 #table_client_user_folder_access
 
-def getUserFolderAccess(userid, canmanage):
+def getUserFolderAccess(userid, email, canmanage):
 
-    folders = [{ "folder": userid, "canmanage": True, "email_recips": [userid] }]
+    folders = [{ "folder": userid, "canmanage": True, "email_recips": [email] }]
     qs = f"PartitionKey eq 'user' and RowKey eq '{userid.lower()}'"
     app_log.debug(qs)
     userfoldersquery = tc_user_access.query_entities(qs)
@@ -544,10 +545,10 @@ async def get_folders(request: Request):
     try:
         json_body = await request.json()
         filter = json_body.get("filter")
-        userid = getuserid(request)
+        userid, email = getuseridAndEmail(request)
         canmanage = (filter == "canmanage")
 
-        return getUserFolderAccess(userid, canmanage)
+        return getUserFolderAccess(userid, email, canmanage)
     
     except Exception as ex:
         log.exception("Exception in /getfolders")
@@ -669,8 +670,8 @@ async def get_tags(request: Request):
         cosmos_client = CosmosClient(url=statusLog._url, credential=statusLog._key)     
         database = cosmos_client.get_database_client(statusLog._database_name)               
         container = database.get_container_client(statusLog._container_name) 
-        userid = getuserid(request)
-        userfolders = getUserFolderAccess(userid, False)
+        userid, email = getuseridAndEmail(request)
+        userfolders = getUserFolderAccess(userid, email, False)
         queryfilter = ""
         for f in userfolders:
             if (queryfilter == ""):
@@ -813,22 +814,22 @@ async def get_citation(request: Request):
 #         }
 #     return response
 
-@app.get("/getalltags")
-@requires_auth
-async def get_all_tags(request: Request):
-    """
-    Get the status of all tags in the system
+# @app.get("/getalltags")
+# @requires_auth
+# async def get_all_tags(request: Request):
+#     """
+#     Get the status of all tags in the system
 
-    Returns:
-        dict: A dictionary containing the status of all tags
-    """
-    try:
-        userid = getuserid(request)
-        results = statusLog.get_all_tags(userid)
-    except Exception as ex:
-        log.exception("Exception in /getalltags")
-        raise HTTPException(status_code=500, detail=str(ex)) from ex
-    return results
+#     Returns:
+#         dict: A dictionary containing the status of all tags
+#     """
+#     try:
+#         userid, email = getuseridAndEmail(request)
+#         results = statusLog.get_all_tags(userid)
+#     except Exception as ex:
+#         log.exception("Exception in /getalltags")
+#         raise HTTPException(status_code=500, detail=str(ex)) from ex
+#     return results
 
 @app.get("/getTempImages")
 async def get_temp_images():
@@ -945,18 +946,18 @@ async def refresh():
         raise HTTPException(status_code=500, detail=str(ex)) from ex
     return {"status": "success"}
 
-@app.get("/getSolve")
-async def getSolve(question: Optional[str] = None):
+# @app.get("/getSolve")
+# async def getSolve(question: Optional[str] = None):
    
-    if question is None:
-        raise HTTPException(status_code=400, detail="Question is required")
+#     if question is None:
+#         raise HTTPException(status_code=400, detail="Question is required")
 
-    try:
-        results = process_agent_scratch_pad(question)
-    except Exception as ex:
-        log.exception("Exception in /getSolve")
-        raise HTTPException(status_code=500, detail=str(ex)) from ex
-    return results
+#     try:
+#         results = process_agent_scratch_pad(question)
+#     except Exception as ex:
+#         log.exception("Exception in /getSolve")
+#         raise HTTPException(status_code=500, detail=str(ex)) from ex
+#     return results
 
 
 @app.get("/stream")
