@@ -194,17 +194,17 @@ deployment = openai_mgmt_client.deployments.get(
 model_name = deployment.properties.model.name
 model_version = deployment.properties.model.version
 
-if (str_to_bool.get(ENV["USE_AZURE_OPENAI_EMBEDDINGS"])):
-    embedding_deployment = openai_mgmt_client.deployments.get(
-        resource_group_name=ENV["AZURE_OPENAI_RESOURCE_GROUP"],
-        account_name=ENV["AZURE_OPENAI_SERVICE"],
-        deployment_name=ENV["EMBEDDING_DEPLOYMENT_NAME"])
+# if (str_to_bool.get(ENV["USE_AZURE_OPENAI_EMBEDDINGS"])):
+#     embedding_deployment = openai_mgmt_client.deployments.get(
+#         resource_group_name=ENV["AZURE_OPENAI_RESOURCE_GROUP"],
+#         account_name=ENV["AZURE_OPENAI_SERVICE"],
+#         deployment_name=ENV["EMBEDDING_DEPLOYMENT_NAME"])
 
-    embedding_model_name = embedding_deployment.properties.model.name
-    embedding_model_version = embedding_deployment.properties.model.version
-else:
-    embedding_model_name = ""
-    embedding_model_version = ""
+#     embedding_model_name = embedding_deployment.properties.model.name
+#     embedding_model_version = embedding_deployment.properties.model.version
+# else:
+embedding_model_name = ""
+embedding_model_version = ""
 
 chat_approaches = {
     Approaches.ReadRetrieveRead: ChatReadRetrieveReadApproach(
