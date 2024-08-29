@@ -347,7 +347,8 @@ class Utilities:
         """ Function to return the number of tokens in a text string"""
         # calc token count
         # For gpt-4, gpt-3.5-turbo, text-embedding-ada-002, you need to use cl100k_base
-        encoding = "cl100k_base"
+        encoding = tiktoken.encoding_name_for_model("gpt-4o-mini") #TODO: use env setting frmo chat model
+        #encoding = "cl100k_base"
         token_count = self.num_tokens_from_string(input_text, encoding)
         return token_count
 
