@@ -47,10 +47,12 @@ from approaches.tabulardataassistant import (
     get_images_in_temp
 
 )
-from shared_code.status_log import State, StatusClassification, StatusLog, StatusQueryLevel
+from shared_code.status_log import State, StatusClassification, StatusLog
 from azure.cosmos import CosmosClient
 
 from fastapi_microsoft_identity import ( initialize, requires_auth, validate_scope, get_token_claims )
+
+from shared_code.data_pipelines import DataPipelines
 
 # === ENV Setup ===
 
@@ -178,6 +180,8 @@ model_version = ''
 
 tc_user_access = TableClient.from_connection_string(ENV["BLOB_CONNECTION_STRING"], "UserFolderAccess")
 tc_folders = TableClient.from_connection_string(ENV["BLOB_CONNECTION_STRING"], "Folders")
+data_pipelines = DataPipelines(ENV["BLOB_CONNECTION_STRING"], ENV["AZURE_OPENAI_ENDPOINT"], ENV["AZURE_OPENAI_SERVICE_KEY"], openai.api_version, ENV["AZURE_OPENAI_CHATGPT_DEPLOYMENT"])
+
 
 # Set up OpenAI management client
 openai_mgmt_client = CognitiveServicesManagementClient(
@@ -287,7 +291,7 @@ app = FastAPI(
     docs_url="/docs",
 )
 
-def getuseridAndEmail(request: Request):
+def getUseridAndEmail(request: Request):
     tc = get_token_claims(request)
     uid = tc["upn"]
     email = tc["email"]
@@ -320,34 +324,36 @@ async def chat(request: Request):
     overrides = json_body.get("overrides", {})
     
     try:
-        userid, email = getuseridAndEmail(request)
-        fc = os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"]
-        sfcsv = overrides.get("selected_files", "")
-        if (sfcsv == ""):
-            overrides["selected_folders"] = userid
-        else:
-            allowed_folders = getUserFolderAccess(userid, email, False)
-            sf = sfcsv.split(",")
-            for f in sf:
-                fallowed = False
-                for af in allowed_folders:
-                    prefix = fc + "/" + af["folder"]
-                    if f.startswith(prefix):
-                        fallowed = True
-                        break
-                if (fallowed == False):
-                    log.error(f"User {userid} trying to chat on file {f}")
-                    raise Exception("Not Allowed To Chat On this folder")
-
 
         impl = chat_approaches.get(Approaches(int(approach)))
         if not impl:
             return {"error": "unknown approach"}, 400
+
+        if (Approaches(int(approach)) == Approaches.ReadRetrieveRead):
+            userid, email = getUseridAndEmail(request)
+            fc = os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"]
+            sfcsv = overrides.get("selected_files", "")
+            if (sfcsv == ""):
+                overrides["selected_folders"] = userid
+            else:
+                allowed_folders = getUserFolderAccess(userid, email, False)
+                sf = sfcsv.split(",")
+                for f in sf:
+                    fallowed = False
+                    for af in allowed_folders:
+                        prefix = fc + "/" + af["folder"]
+                        if f.startswith(prefix):
+                            fallowed = True
+                            break
+                    if (fallowed == False):
+                        log.error(f"User {userid} trying to chat on file {f}")
+                        raise Exception("Not Allowed To Chat On this folder")
         
-        if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
-            r = impl.run(json_body.get("history", []), overrides, json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
-        else:
-            r = impl.run(json_body.get("history", []), overrides, {}, json_body.get("thought_chain", {}))
+        #if (Approaches(int(approach)) == Approaches.CompareWorkWithWeb or Approaches(int(approach)) == Approaches.CompareWebWithWork):
+        #    r = impl.run(json_body.get("history", []), overrides, json_body.get("citation_lookup", {}), json_body.get("thought_chain", {}))
+        #else:
+        fallback_impl = chat_approaches.get(Approaches.GPTDirect) if (Approaches(int(approach)) == Approaches.ChatWebRetrieveRead) else None
+        r = impl.run(json_body.get("history", []), overrides, {}, json_body.get("thought_chain", {}), fallback_impl)
        
         return StreamingResponse(r, media_type="application/x-ndjson")
     
@@ -399,7 +405,7 @@ async def get_complete_files(request: Request):
     - results: see above.
     """
     try:
-        userid, email = getuseridAndEmail(request)
+        userid, email = getUseridAndEmail(request)
         folders = getUserFolderAccess(userid, email, False)
         results = statusLog.read_files_by_folders(folders, 
             os.environ["AZURE_BLOB_STORAGE_UPLOAD_CONTAINER"])
@@ -435,7 +441,7 @@ async def get_all_upload_status(request: Request):
             folder = "*"
         
         if (folder == "*"):
-            folder, email = getuseridAndEmail(request)
+            folder, email = getUseridAndEmail(request)
 
         results = statusLog.read_files_status_by_timeframe(timeframe, 
             State[state], 
@@ -504,6 +510,28 @@ def getUserFolderAccess(userid, email, canmanage):
     app_log.debug(msg)
     return folders
 
+@app.get("/getDataPipelines")
+@requires_auth
+async def get_data_pipelines(request: Request):
+    """
+    Get user permissioned data pipelines.
+
+    Parameters:
+    - request: The HTTP request object.
+
+    Returns:
+    - results: list of unique data pipelines.
+    """
+    try:
+        userid, email = getUseridAndEmail(request)
+        p = data_pipelines.get_pipelines_for_user(userid)
+        return p
+
+    except Exception as ex:
+        log.exception("Exception in /getDataPipelines")
+        raise HTTPException(status_code=500, detail=str(ex)) from ex
+
+    
 
 @app.post("/getfolders")
 @requires_auth
@@ -519,9 +547,9 @@ async def get_folders(request: Request):
     """
     try:
         json_body = await request.json()
-        filter = json_body.get("filter")
-        userid, email = getuseridAndEmail(request)
-        canmanage = (filter == "canmanage")
+        f = json_body.get("filter")
+        userid, email = getUseridAndEmail(request)
+        canmanage = (f == "canmanage")
 
         return getUserFolderAccess(userid, email, canmanage)
     
@@ -645,7 +673,7 @@ async def get_tags(request: Request):
         cosmos_client = CosmosClient(url=statusLog._url, credential=statusLog._key)     
         database = cosmos_client.get_database_client(statusLog._database_name)               
         container = database.get_container_client(statusLog._container_name) 
-        userid, email = getuseridAndEmail(request)
+        userid, email = getUseridAndEmail(request)
         userfolders = getUserFolderAccess(userid, email, False)
         queryfilter = ""
         for f in userfolders:

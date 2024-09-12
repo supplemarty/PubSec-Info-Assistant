@@ -17,6 +17,15 @@ export const enum Approaches {
     CompareWebWithWork = 6
 }
 
+export type DataPipeline = {
+    
+    name: string;
+    systemPrompt: string;
+    sharepointSite: string;
+    excelFilePath: string;
+    excelTableName: string;
+}
+
 export type ContentFolder = {
     folder: string;
     canmanage: boolean;

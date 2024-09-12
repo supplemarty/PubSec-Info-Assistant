@@ -95,7 +95,7 @@ class ChatWebRetrieveRead(Approach):
         api_version=openai.api_version)
         
 
-    async def run(self, history: Sequence[dict[str, str]],overrides: dict[str, Any], citation_lookup: dict[str, Any], thought_chain: dict[str, Any]) -> Any:
+    async def run(self, history: Sequence[dict[str, str]],overrides: dict[str, Any], citation_lookup: dict[str, Any], thought_chain: dict[str, Any], fallback_impl: Approach | None) -> Any:
         """
         Runs the approach to simulate experience with Bing Chat.
 
@@ -143,8 +143,17 @@ class ChatWebRetrieveRead(Approach):
         thought_chain["web_search_term"] = query_resp
         # STEP 2: Use the search query to get the top web search results
         url_snippet_dict = await self.web_search_with_safe_search(query_resp)
-        content = ', '.join(f'{snippet} | {url}' for url, snippet in url_snippet_dict.items())
-        user_query += "Url Sources:\n" + content + "\n\n"
+        if (url_snippet_dict):
+            content = ', '.join(f'{snippet} | {url}' for url, snippet in url_snippet_dict.items())
+            user_query += " Url Sources:\n" + content + "\n\n"
+        else:
+            if (fallback_impl):
+                async for item in fallback_impl.run(history, overrides, citation_lookup, thought_chain, None):
+                    yield item
+            else:
+                yield json.dumps({"error": "No web search results found"}) + "\n"
+            return
+
 
         # Use re.sub to replace anything within square brackets with an empty string
         query_resp = re.sub(r'\[.*?\]', '', query_resp)

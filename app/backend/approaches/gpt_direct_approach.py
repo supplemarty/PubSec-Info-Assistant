@@ -92,7 +92,7 @@ class GPTDirectApproach(Approach):
         api_version=openai.api_version)
 
     # def run(self, history: list[dict], overrides: dict) -> any:
-    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], citation_lookup: dict[str, Any], thought_chain: dict[str, Any]) -> Any:
+    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], citation_lookup: dict[str, Any], thought_chain: dict[str, Any], fallback_impl: Approach | None) -> Any:
         user_persona = overrides.get("user_persona", "")
         system_persona = overrides.get("system_persona", "")
         response_length = int(overrides.get("response_length") or 1024)

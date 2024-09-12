@@ -139,7 +139,7 @@ class ChatReadRetrieveReadApproach(Approach):
         self.model_version = model_version
         
     # def run(self, history: list[dict], overrides: dict) -> any:
-    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], citation_lookup: dict[str, Any], thought_chain: dict[str, Any]) -> Any:
+    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], citation_lookup: dict[str, Any], thought_chain: dict[str, Any], fallback_impl: Approach | None) -> Any:
 
         log = logging.getLogger("uvicorn")
         log.setLevel('DEBUG')
@@ -300,11 +300,13 @@ class ChatReadRetrieveReadApproach(Approach):
             # print(f"File{idx}: ", self.num_tokens_from_string(f"File{idx} " + /
             #  "| " + nonewlines(doc[self.content_field]), "cl100k_base"))
 
+            page_num = "0" if (len(doc[self.page_number_field]) == 0) else str(doc[self.page_number_field][0])
+
             # add the "FileX" moniker and full file name to the citation lookup
             citation_lookup[f"File{idx}"] = {
                 "citation": urllib.parse.unquote("https://" + doc[self.source_file_field].split("/")[2] + f"/{self.content_storage_container}/" + doc[self.chunk_file_field]),
                 "source_path": self.get_source_file_with_sas(doc[self.source_file_field]),
-                "page_number": str(doc[self.page_number_field][0]) or "0",
+                "page_number": page_num,
              }
             
         # create a single string of all the results to be used in the prompt
@@ -364,7 +366,7 @@ class ChatReadRetrieveReadApproach(Approach):
                     system_message,
                     self.model_name,
                     history,
-                    history[-1]["user"] + "Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
+                    history[-1]["user"] + " Sources:\n" + content + "\n\n", # 3.5 has recency Bias that is why this is here
                     self.RESPONSE_PROMPT_FEW_SHOTS,
                     max_tokens=self.chatgpt_token_limit - 500
                 )

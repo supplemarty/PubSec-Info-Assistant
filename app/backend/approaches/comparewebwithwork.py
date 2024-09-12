@@ -94,7 +94,7 @@ class CompareWebWithWork(Approach):
         api_key=openai.api_key,  
         api_version=openai.api_version)
 
-    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], web_citation_lookup: dict[str, Any], thought_chain: dict[str, Any]) -> Any:
+    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], web_citation_lookup: dict[str, Any], thought_chain: dict[str, Any], fallback_impl: Approach | None) -> Any:
         """
         Runs the approach to compare and contrast answers from internal data and Web Search results.
 

@@ -12,7 +12,7 @@ import { TagPickerInline } from "../../components/TagPicker/TagPicker"
 import { SparkleFilled, DocumentPdfFilled, DocumentDataFilled, GlobePersonFilled, MailFilled, StoreMicrosoftFilled } from "@fluentui/react-icons";
 import styles from "./Content.module.css";
 import { IdentityManager } from "../../identity";
-import { getFolders } from "../../api";
+import { getFolders, getDataPipelines, DataPipeline } from "../../api";
 
 
 export interface IButtonExampleProps {
@@ -27,6 +27,7 @@ const Content = () => {
     const [selectedTags, setSelectedTags] = useState<string[] | undefined>(undefined);
     const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
     const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);    
+    const [dataPipelines, setDataPipelines] = useState<DataPipeline[]>([]);
 
     // const [selectedApproach, setSelectedApproach] = useState<number | undefined>(undefined);
 
@@ -50,6 +51,16 @@ const Content = () => {
     // const handleLinkClick = (item?: PivotItem) => {
     //     setSelectedKey(undefined);
     // };   
+
+    const fetchDataPipelines = async () => {
+        try {
+            const p = await getDataPipelines();
+            setDataPipelines(p);
+        }
+        catch (e) {
+            console.log(e);
+        }
+    }
 
     const fetchFolders = async () => {
         try {
@@ -94,6 +105,7 @@ const Content = () => {
         //     setSelectedKey(u.UserId);
         // });
         fetchFolders();
+        fetchDataPipelines();
     },[]);
 
     return (
@@ -161,6 +173,11 @@ const Content = () => {
                 <PivotItem headerText="Upload Status" aria-label="Upload Status Tab">
                     <FileStatus className=""/>
                 </PivotItem>
+                { dataPipelines.length > 0 && (
+                <PivotItem headerText="Data Import" aria-label="Data Import Tab">
+                    <div>TODO</div>
+                </PivotItem>
+                )}
             </Pivot>
         </div>
     );

@@ -25,7 +25,7 @@ class Approach:
     USER = "user"
     ASSISTANT = "assistant"
 
-    async def run(self, history: list[dict], overrides: dict, citation_lookup: dict[str, Any], thought_chain: dict[str, Any]) -> any:
+    async def run(self, history: list[dict], overrides: dict, citation_lookup: dict[str, Any], thought_chain: dict[str, Any], fallback_impl: Any | None) -> any:
         """
         Run the approach on the query and documents. Not implemented.
 

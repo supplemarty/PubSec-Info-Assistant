@@ -68,7 +68,7 @@ class CompareWorkWithWeb(Approach):
         api_key=openai.api_key,  
         api_version=openai.api_version)
 
-    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], work_citation_lookup: dict[str, Any], thought_chain: dict[str, Any]) -> Any:
+    async def run(self, history: Sequence[dict[str, str]], overrides: dict[str, Any], work_citation_lookup: dict[str, Any], thought_chain: dict[str, Any], fallback_impl: Approach | None) -> Any:
         """
         Runs the comparative analysis between Bing Search Response and Internal Documents.
 

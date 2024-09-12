@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { ChatResponse, 
+import { //ChatResponse, 
     ChatRequest, 
     BlobClientUrlResponse, 
     AllFilesUploadStatus, 
@@ -19,7 +19,8 @@ import { ChatResponse,
     getMaxCSVFileSizeType,
     GetAppIdentityResponse,
     ContentFolder,
-    FileUploadFolder
+    FileUploadFolder,
+    DataPipeline
     } from "./models";
 
 
@@ -208,6 +209,10 @@ export async function resubmitItem(options: ResubmitItemRequest): Promise<boolea
     }
 }
 
+export async function getDataPipelines(): Promise<DataPipeline[]> {
+    const response = await authFetch("/getDataPipelines", { method: "GET"})
+    return await response.json()
+}
 
 export async function getFolders(filter: string): Promise<ContentFolder[]> {
     const response = await authFetch("/getfolders", {
