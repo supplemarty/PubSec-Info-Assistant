@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Stack, TextField } from "@fluentui/react";
 import { Send28Filled, Broom28Filled } from "@fluentui/react-icons";
 import { RAIPanel } from "../RAIPanel";
@@ -19,10 +19,13 @@ interface Props {
     showClearChat?: boolean;
     onClearClick?: () => void;
     onRegenerateClick?: () => void;
+    showRAIPanel?: boolean;
 }
 
-export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, onAdjustClick, showClearChat, onClearClick, onRegenerateClick }: Props) => {
+export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, onAdjustClick, showClearChat, onClearClick, onRegenerateClick, showRAIPanel }: Props) => {
+    
     const [question, setQuestion] = useState<string>("");
+    const showPanel: boolean = (showRAIPanel ?? true);
 
     const sendQuestion = () => {
         if (disabled || !question.trim()) {
@@ -103,9 +106,10 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, onAd
                 </div>
             </Stack>
             </Stack.Item>
-            <Stack.Item align="center">
-                <RAIPanel onAdjustClick={onAdjustClick} onRegenerateClick={onRegenerateClick} />
-            </Stack.Item>
+            {showPanel &&
+                (<Stack.Item align="center">
+                    <RAIPanel onAdjustClick={onAdjustClick} onRegenerateClick={onRegenerateClick} />
+                </Stack.Item>) }
         </Stack>
     );
 };

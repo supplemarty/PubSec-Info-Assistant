@@ -52,7 +52,7 @@ from azure.cosmos import CosmosClient
 
 from fastapi_microsoft_identity import ( initialize, requires_auth, validate_scope, get_token_claims )
 
-from shared_code.data_pipelines import DataPipelines
+from shared_code.data_pipelines import DataPipelines, DataPiplineExcelTarget
 
 # === ENV Setup ===
 
@@ -110,6 +110,10 @@ ENV = {
     "AZURE_WEBAPP_CLIENT_ID": "",
     "BLOB_CONNECTION_STRING": None,
     "LOG_LEVEL": "DEBUG", # Will be overwritten by LOG_LEVEL in Environment
+    "DIVCO_ETL_AZURE_TENANT_ID": None,
+    "DIVCO_ETL_AZURE_CLIENT_ID": None,
+    "DIVCO_ETL_AZURE_CLIENT_SECRET": None,
+    "SHAREPOINT_HOST_NAME": None
     }
 
 for key, value in ENV.items():
@@ -509,6 +513,39 @@ def getUserFolderAccess(userid, email, canmanage):
     msg = f"Returning: {len(folders)} folders"
     app_log.debug(msg)
     return folders
+
+@app.post("/dataPipelineProcessData")
+@requires_auth
+async def data_pipeline_process_data(request: Request):
+    """
+    Process data pipeline data import
+
+    Parameters:
+    - request: The HTTP request object.
+
+    Returns:
+    - result of import
+    """
+    try:
+        json_body = await request.json()
+        pipeline = json_body.get("pipeline")
+        prompt = json_body.get("prompt")
+        res = {}
+        data_str = await data_pipelines.get_data_from_content_async(pipeline=pipeline, content=prompt)
+        items = json.loads(data_str)
+        res["items"] = items
+        if (len(items) > 0):
+            dp_ex = DataPiplineExcelTarget(ENV["DIVCO_ETL_AZURE_TENANT_ID"], ENV["DIVCO_ETL_AZURE_CLIENT_ID"], ENV["DIVCO_ETL_AZURE_CLIENT_SECRET"], pipeline, ENV["SHAREPOINT_HOST_NAME"])
+            ex_res, column_names = dp_ex.add_data_to_workbook(items)
+            res["excel_row_index"] = ex_res["index"]
+            res["excel_row_values"] = ex_res["values"]
+            res["excel_column_names"] = column_names
+        
+        return res
+
+    except Exception as ex:
+        log.exception("Exception in /dataPipelineProcessData")
+        raise HTTPException(status_code=500, detail=str(ex)) from ex
 
 @app.get("/getDataPipelines")
 @requires_auth

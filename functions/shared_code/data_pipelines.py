@@ -70,7 +70,7 @@ class DataPiplineExcelTarget:
         return az_token.token
 
     
-    def add_data_to_workbook(self, json_str: str):
+    def add_data_to_workbook(self, items: list) -> dict:
         headers = {"Authorization": f"Bearer {self.get_token()}"}
         base_url = "https://graph.microsoft.com/v1.0"
 
@@ -93,11 +93,11 @@ class DataPiplineExcelTarget:
         url = f"{base_url}/drives/{driveId}/items/{fileId}/workbook/tables/{table_name}/columns?$select=name,index"
         columns = requests.get(url, headers=headers).json()
         column_map = {}
+        column_names = [None] * len(columns["value"])
         for column in columns["value"]:
             column_map[column["name"]] = column["index"]
+            column_names[column["index"]] = column["name"]
         
-        items = json.loads(json_str)
-
         rows = []
         for item in items:
             cells = [None] * len(column_map)
@@ -110,3 +110,6 @@ class DataPiplineExcelTarget:
         pr = requests.post(url, headers=headers, json=body)
         if pr.ok:
             rj = pr.json()
+            return rj, column_names
+        else:
+            raise Exception("Error during Excel import")

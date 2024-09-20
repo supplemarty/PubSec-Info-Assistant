@@ -26,6 +26,19 @@ export type DataPipeline = {
     excelTableName: string;
 }
 
+export type DataPipelineImportRequest = {
+    pipeline: DataPipeline;
+    prompt: string;
+}
+
+export type DataPipelineImportResponse = {
+    items: Array<any>;
+    excel_row_index: number;
+    excel_row_values: Array<any>;
+    excel_column_names: Array<string>;
+}
+
+
 export type ContentFolder = {
     folder: string;
     canmanage: boolean;

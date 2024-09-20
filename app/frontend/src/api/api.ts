@@ -20,7 +20,9 @@ import { //ChatResponse,
     GetAppIdentityResponse,
     ContentFolder,
     FileUploadFolder,
-    DataPipeline
+    DataPipeline,
+    DataPipelineImportRequest,
+    DataPipelineImportResponse
     } from "./models";
 
 
@@ -61,6 +63,20 @@ export async function getAppIdentity() : Promise<GetAppIdentityResponse> {
         throw Error(parsedResponse.error || "Unknown error");
     }
     console.log(parsedResponse);
+    return parsedResponse;
+}
+
+export async function dataPiplineImportData(req: DataPipelineImportRequest): Promise<DataPipelineImportResponse> {
+    
+    const response = await authFetch("/dataPipelineProcessData", {
+        method: "POST",
+        body: JSON.stringify(req)
+    });
+    const parsedResponse: DataPipelineImportResponse = await response.json();
+    if (response.status > 299 || !response.ok) {
+        throw Error("Unknown error");
+    }
+
     return parsedResponse;
 }
 

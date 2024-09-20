@@ -13,7 +13,7 @@ import { SparkleFilled, DocumentPdfFilled, DocumentDataFilled, GlobePersonFilled
 import styles from "./Content.module.css";
 import { IdentityManager } from "../../identity";
 import { getFolders, getDataPipelines, DataPipeline } from "../../api";
-
+import { DataImport } from "../../components/DataImport";
 
 export interface IButtonExampleProps {
     disabled?: boolean;
@@ -25,8 +25,10 @@ export interface IButtonExampleProps {
 const Content = () => {
     //const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined);
     const [selectedTags, setSelectedTags] = useState<string[] | undefined>(undefined);
+
     const [SelectedFolderItem, setSelectedFolderItem] = useState<IDropdownOption>();
     const [folderOptions, setFolderOptions] = useState<IDropdownOption[]>([]);    
+
     const [dataPipelines, setDataPipelines] = useState<DataPipeline[]>([]);
 
     // const [selectedApproach, setSelectedApproach] = useState<number | undefined>(undefined);
@@ -41,7 +43,8 @@ const Content = () => {
 
     const onFolderChange = (event: React.FormEvent<HTMLDivElement>, item: IDropdownOption<any> | undefined): void => {
         setSelectedFolderItem(item);
-    };    
+    };
+
 
     // const onSelectedApproach = (approach: number) => {
     //     setSelectedApproach(approach);
@@ -54,8 +57,8 @@ const Content = () => {
 
     const fetchDataPipelines = async () => {
         try {
-            const p = await getDataPipelines();
-            setDataPipelines(p);
+            const pipelines = await getDataPipelines();
+            setDataPipelines(pipelines);
         }
         catch (e) {
             console.log(e);
@@ -175,7 +178,7 @@ const Content = () => {
                 </PivotItem>
                 { dataPipelines.length > 0 && (
                 <PivotItem headerText="Data Import" aria-label="Data Import Tab">
-                    <div>TODO</div>
+                    <DataImport pipelines={dataPipelines} />
                 </PivotItem>
                 )}
             </Pivot>
