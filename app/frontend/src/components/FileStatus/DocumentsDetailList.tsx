@@ -3,6 +3,9 @@
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 
+import msg_icon from "../../assets/msg.svg";
+import eml_icon from "../../assets/eml.svg";
+
 import { DetailsList, 
     DetailsListLayoutMode, 
     SelectionMode, 
@@ -262,14 +265,31 @@ export const DocumentsDetailList = ({ items, onFilesSorted, onRefresh }: Props) 
             onColumnClick: onColumnClick,
             onRender: (item: IDocument) => {
                 let src;
-                const supportedFileTypes = ['XML', 'JSON', 'CSV', 'PPTX', 'DOCX', 'PDF', 'TXT', 'XLSX', 'HTM', 'HTML', 'EML', 'MSG'];
+                const supportedFileTypes = ['XML', 'JSON', 'CSV', 'PPTX', 'DOCX', 'PDF', 'TXT', 'XLSX', 'HTM', 'HTML'];
                 if (item.fileType === 'PNG' || item.fileType === 'JPEG' || item.fileType === 'JPG') {
                     return (
                         <TooltipHost content={`${item.fileType} file`}>
                             <ImageBorderFilled className={styles.fileIconImg} aria-label={`${item.fileType} file icon`} fontSize="16px" />
                         </TooltipHost>
                     );   
-                } else if (supportedFileTypes.includes(item.fileType)) {
+                }
+                else if (item.fileType === 'MSG')
+                {
+                    return (
+                        <TooltipHost content={`${item.fileType} file`}>
+                            <img src={msg_icon} className={styles.fileIconImg} alt={`${item.fileType} file icon`} />
+                        </TooltipHost>
+                    );
+                }
+                else if (item.fileType === 'EML')
+                {
+                    return (
+                        <TooltipHost content={`${item.fileType} file`}>
+                            <img src={eml_icon} className={styles.fileIconImg} alt={`${item.fileType} file icon`} />
+                        </TooltipHost>
+                    );
+                }
+                else if (supportedFileTypes.includes(item.fileType)) {
                     src = `https://res-1.cdn.office.net/files/fabric-cdn-prod_20221209.001/assets/item-types/16/${item.iconName}.svg`;
                     return (
                         <TooltipHost content={`${item.fileType} file`}>
